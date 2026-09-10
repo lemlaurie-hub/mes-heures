@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f2937">
+  <meta name="description" content="Mes heures, suivi personnel du temps de travail.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>Mes heures</title>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">MES HEURES</div>
+      <h1 id="screenTitle">Aujourd’hui</h1>
+    </div>
+    <button id="settingsBtn" class="icon-btn" aria-label="Réglages">⚙️</button>
+  </header>
+
+  <main>
+    <section id="todayView" class="view"></section>
+    <section id="historyView" class="view hidden"></section>
+    <section id="settingsView" class="view hidden"></section>
+  </main>
+
+  <nav class="bottomnav" aria-label="Navigation principale">
+    <button data-view="todayView" class="navbtn active">Aujourd’hui</button>
+    <button data-view="historyView" class="navbtn">Historique</button>
+  </nav>
+
+  <dialog id="timeDialog">
+    <form method="dialog" id="timeForm">
+      <h2 id="timeDialogTitle">Modifier l’heure</h2>
+      <input id="timeInput" type="time" required>
+      <div class="dialog-actions">
+        <button value="cancel" class="secondary">Annuler</button>
+        <button id="timeSaveBtn" value="default">Enregistrer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
