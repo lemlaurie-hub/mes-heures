@@ -24,7 +24,7 @@ window.MH = window.MH || {};
   function weekDays(k=dateKey()){const s=new Date(weekStart(k)+'T12:00:00');return Array.from({length:7},(_,i)=>{const d=new Date(s);d.setDate(s.getDate()+i);return localKey(d)})}
   function firstMonday(y){const d=new Date(Number(y),0,1,12);while(d.getDay()!==1)d.setDate(d.getDate()+1);return localKey(d)}
   function mondays(y){const out=[];let k=firstMonday(y);while(new Date(k+'T12:00:00').getFullYear()===Number(y)){out.push(k);k=addDays(k,7)}return out}
-  function weekNumber(k){const first=firstMonday(new Date(k+'T12:00:00').getFullYear());return 1+Math.floor((new Date(k+'T12:00:00')-new Date(first+'T12:00:00'))/(7*DAY))}
+  function weekNumber(k){const d=new Date(k+'T12:00:00'),first=new Date(firstMonday(d.getFullYear())+'T12:00:00'),dayUtc=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()),firstUtc=Date.UTC(first.getFullYear(),first.getMonth(),first.getDate());return 1+Math.floor((dayUtc-firstUtc)/(7*DAY))}
   function rangeDates(a,b){const out=[];if(!a||!b||b<a)return out;for(let k=a;k<=b;k=addDays(k,1))out.push(k);return out}
   function monthBounds(offset=0){const d=new Date();d.setMonth(d.getMonth()+Number(offset||0),1);return[localKey(new Date(d.getFullYear(),d.getMonth(),1,12)),localKey(new Date(d.getFullYear(),d.getMonth()+1,0,12))]}
   function validSegments(day){return Array.isArray(day?.segments)?day.segments.filter(s=>s&&s.start):[]}
