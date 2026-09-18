@@ -1,4 +1,11 @@
-const CACHE='mes-heures-v45-actual-day';
+/*
+ * Service worker de Mes heures.
+ *
+ * L'application est utilisable hors ligne : les fichiers nécessaires sont
+ * conservés dans un cache versionné. Changer CACHE force le remplacement de
+ * l'ancienne version après un déploiement.
+ */
+const CACHE='mes-heures-v46-pause-source';
 const ASSETS=['./','./index.html','./styles.css','./core.js','./domain.js','./v17.js','./ui.js','./actual-day.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
@@ -17,6 +24,10 @@ self.addEventListener('activate',event=>{
   );
 });
 
+/*
+ * Cache d'abord pour un démarrage immédiat, puis mise à jour en arrière-plan.
+ * En mode avion, la copie locale est donc suffisante pour ouvrir l'application.
+ */
 self.addEventListener('fetch',event=>{
   if(event.request.method!=='GET') return;
 
