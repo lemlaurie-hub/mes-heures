@@ -1,5 +1,5 @@
-const CACHE='mes-heures-v44-weekly-balance';
-const ASSETS=['./','./index.html','./styles.css','./core.js','./domain.js','./v17.js','./ui.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
+const CACHE='mes-heures-v45-actual-day';
+const ASSETS=['./','./index.html','./styles.css','./core.js','./domain.js','./v17.js','./ui.js','./actual-day.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
