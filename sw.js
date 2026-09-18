@@ -1,4 +1,4 @@
-const CACHE='mes-heures-v43-projection-detail';
+const CACHE='mes-heures-v44-weekly-balance';
 const ASSETS=['./','./index.html','./styles.css','./core.js','./domain.js','./v17.js','./ui.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
