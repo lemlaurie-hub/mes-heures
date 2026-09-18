@@ -1,50 +1,113 @@
-/* Mes heures - édition du réel : le planning sert de base, le réel ne remplace que ce qui est saisi */
+/*
+ * Mes heures - journées réelles
+ *
+ * Rôle de ce module :
+ * - une journée prévue sert de modèle de départ ;
+ * - le pointage réel remplace seulement les valeurs réellement saisies ;
+ * - une pause héritée du planning est matérialisée dans la journée réelle afin
+ *   que l'affichage, les calculs et l'éditeur lisent tous la même valeur ;
+ * - une pause modifiée manuellement reste explicitement prioritaire ;
+ * - une plage peut se terminer après minuit sans changer de journée de travail.
+ *
+ * Important : les écrans ne doivent pas réinventer ces règles. Ils appellent
+ * ce module, qui constitue l'unique porte d'entrée pour l'édition du réel.
+ */
 window.MH = window.MH || {};
 (function(MH){
   'use strict';
   const C=MH.core,D=MH.domain,S=()=>C.state;
 
+  /** Durée brute d'une plage. Une heure de fin plus petite signifie J+1. */
   function overnightDuration(start,end){
     const a=C.mins(start),b=C.mins(end);
     if(a==null||b==null)return null;
     return (b<a?b+1440:b)-a;
   }
 
-  /* Une plage appartient au jour où elle commence. Une fin plus petite que le début = lendemain. */
+  /**
+   * Calcul unique du temps réellement travaillé.
+   * La pause lue ici est celle stockée sur la journée réelle. Le présent
+   * module veille justement à ce qu'elle soit synchronisée avec son origine.
+   */
   C.worked=function(day){
     if(!day)return null;
     const ss=C.validSegments(day);
     if(ss.length){
       let total=0,complete=0;
-      for(const s of ss){const n=overnightDuration(s.start,s.end);if(n!=null){total+=n;complete++}}
+      for(const s of ss){
+        const n=overnightDuration(s.start,s.end);
+        if(n!=null){total+=n;complete++}
+      }
       return complete?Math.max(0,total-C.pauseFor(day)):null;
     }
     if(day.workedMinutes!=null)return Math.max(0,Number(day.workedMinutes)-C.pauseFor(day));
     const n=overnightDuration(day.arrival,day.departure);
     return n==null?null:Math.max(0,n-C.pauseFor(day));
   };
+
+  /** Texte commun des plages, avec indication explicite d'un passage à J+1. */
   C.segmentText=function(day){
     const ss=C.validSegments(day);
-    return ss.length?ss.map(s=>{const a=C.mins(s.start),b=C.mins(s.end);return `${s.start}–${s.end||'…'}${a!=null&&b!=null&&b<a?' (+1 j)':''}`}).join(' · '):'—';
+    return ss.length?ss.map(s=>{
+      const a=C.mins(s.start),b=C.mins(s.end);
+      return `${s.start}–${s.end||'…'}${a!=null&&b!=null&&b<a?' (+1 j)':''}`;
+    }).join(' · '):'—';
   };
 
-  function inheritedPause(k){return Math.max(0,Number(D.dayExpectation(k).requiredPause)||0)}
+  /** Pause prévue par le planning effectivement applicable à cette date. */
+  function inheritedPause(k){
+    return Math.max(0,Number(D.dayExpectation(k).requiredPause)||0);
+  }
+
+  /**
+   * Synchronise une pause héritée.
+   * pauseExplicit === true signifie : « l'utilisateur a volontairement choisi
+   * cette valeur ». Dans tous les autres cas créés par ce module, le planning
+   * reste la source et sa valeur est matérialisée dans la journée.
+   */
+  function syncInheritedPause(k,day){
+    if(!day||day.pauseExplicit===true)return false;
+    const expected=inheritedPause(k);
+    const changed=day.pauseMinutes!==expected||day.pauseExplicit!==false;
+    day.pauseMinutes=expected;
+    day.pauseExplicit=false;
+    return changed;
+  }
+
+  /** Prépare une journée au premier pointage sans inventer d'horaires réels. */
   function prepareLiveDay(k=C.dateKey()){
     const d=C.dayObj(k);
-    if(d.pauseExplicit!==true){d.pauseMinutes=inheritedPause(k);d.pauseExplicit=false}
+    syncInheritedPause(k,d);
     return d;
   }
 
+  /**
+   * Construit le modèle d'édition : réel existant d'abord, prévu pour les
+   * champs encore absents. La pause suit la même règle.
+   */
   function editModel(k){
     const stored=S().days[k]||null,x=D.dayExpectation(k),base=x.base;
     const segments=stored?C.validSegments(stored).map(s=>({...s})):[];
-    if(!segments.length&&x.requiredWork>0&&base.start)segments.push({start:base.start,end:base.end||null,label:''});
-    else if(segments.length===1&&!segments[0].end&&x.requiredWork>0&&base.end)segments[0].end=base.end;
+    if(!segments.length&&x.requiredWork>0&&base.start){
+      segments.push({start:base.start,end:base.end||null,label:''});
+    }else if(segments.length===1&&!segments[0].end&&x.requiredWork>0&&base.end){
+      segments[0].end=base.end;
+    }
     const explicit=stored?.pauseExplicit===true;
-    return {stored,x,segments,pause:explicit?C.pauseFor(stored):inheritedPause(k),pauseExplicit:explicit,note:stored?.note||''};
+    return {
+      stored,x,segments,
+      pause:explicit?C.pauseFor(stored):inheritedPause(k),
+      pauseExplicit:explicit,
+      note:stored?.note||''
+    };
   }
 
-  function close(){const d=document.querySelector('#actualDialog');if(d){try{d.close()}catch{}d.remove()}}
+  function close(){
+    const d=document.querySelector('#actualDialog');
+    if(d){try{d.close()}catch{}d.remove()}
+  }
+
+  /** Ouvre le même éditeur, quel que soit l'écran depuis lequel on arrive. */
   function open(k){
     const m=editModel(k);close();
     const esc=C.escapeHtml,attr=C.escapeAttr;
@@ -52,16 +115,44 @@ window.MH = window.MH || {};
     document.querySelector('#actualDialog').showModal();
   }
 
+  /**
+   * Enregistre la journée réelle en une seule opération métier.
+   * Si la pause est identique au planning, elle reste marquée « héritée » ;
+   * sinon elle devient une exception explicite et ne sera plus resynchronisée.
+   */
   function save(){
     const k=document.querySelector('#actualDate').value;
-    const starts=[...document.querySelectorAll('#actualDialog .actual-start')],ends=[...document.querySelectorAll('#actualDialog .actual-end')];
+    const starts=[...document.querySelectorAll('#actualDialog .actual-start')];
+    const ends=[...document.querySelectorAll('#actualDialog .actual-end')];
     const segments=starts.map((x,i)=>({start:x.value,end:ends[i].value||null,label:''})).filter(x=>x.start);
-    const pauseInput=document.querySelector('#actualPause'),pause=Math.max(0,Number(pauseInput.value)||0),inherited=Math.max(0,Number(pauseInput.dataset.inherited)||0);
+    const pauseInput=document.querySelector('#actualPause');
+    const pause=Math.max(0,Number(pauseInput.value)||0);
+    const inherited=inheritedPause(k);
     const d=D.saveDayActual(k,{segments,pauseMinutes:pause,note:document.querySelector('#actualNote').value});
-    d.pauseExplicit=pause!==inherited;d.pauseMinutes=pause;C.save();close();MH.ui?.toast?.('✓ Journée enregistrée.');MH.ui?.renderAll?.();
+    d.pauseExplicit=pause!==inherited;
+    d.pauseMinutes=pause;
+    C.save();
+    close();
+    MH.ui?.toast?.('✓ Journée enregistrée.');
+    MH.ui?.renderAll?.();
   }
 
+  /**
+   * Répare uniquement les journées déjà marquées comme « pause héritée ».
+   * On ne touche jamais aux anciennes journées sans marqueur, car on ne peut
+   * pas savoir honnêtement si leur pause avait été choisie manuellement.
+   */
+  function normalizeKnownInheritedPauses(){
+    let changed=false;
+    for(const [k,d] of Object.entries(S().days||{})){
+      if(d?.pauseExplicit===false)changed=syncInheritedPause(k,d)||changed;
+    }
+    if(changed)C.save();
+  }
+
+  /** Branche les différents boutons de l'interface sur cette logique unique. */
   function install(){
+    normalizeKnownInheritedPauses();
     document.addEventListener('click',e=>{
       const b=e.target.closest('[data-action],[data-actual-action]');if(!b)return;
       const custom=b.dataset.actualAction;
@@ -72,7 +163,9 @@ window.MH = window.MH || {};
       if(['start','resume','set-start'].includes(a)){prepareLiveDay(C.dateKey());C.save()}
       if(a==='save-pause'){const d=C.dayObj();d.pauseExplicit=true;C.save()}
     },true);
-    document.addEventListener('change',e=>{if(e.target.id==='actualDate'&&e.target.closest('#actualDialog')&&e.target.value<=C.dateKey())open(e.target.value)},true);
+    document.addEventListener('change',e=>{
+      if(e.target.id==='actualDate'&&e.target.closest('#actualDialog')&&e.target.value<=C.dateKey())open(e.target.value);
+    },true);
   }
 
   MH.actualDay={editModel,prepareLiveDay,open};
