@@ -1,4 +1,4 @@
-const CACHE='mes-heures-v40-startup-fix';
+const CACHE='mes-heures-v41-annual-carry';
 const ASSETS=['./','./index.html','./styles.css','./core.js','./domain.js','./v17.js','./ui.js','./reprise.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
