@@ -1,0 +1,47 @@
+name: One-shot planning period UI fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/one-shot-fix-plan-periods.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch principal planning UI cleanly
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('ui.js')
+          text = path.read_text(encoding='utf-8')
+
+          old = """<h3>Périodes d’application</h3>${periods.length?periods.map(x=>`<div class=\"history-item\"><div class=\"row\"><span>${x.start} → ${x.end}</span><span>${x.status==='pending'?'En attente':'Validé'}</span></div>${button('Retirer','remove-period','ghost','data-period-id=\"'+x.id+'\"')}</div>`).join(''):'<p class=\"muted\">Aucune période particulière.</p>'}<div class=\"weekgrid\"><div class=\"field\"><label>Du</label><input id=\"periodStart-${p.id}\" type=\"date\"></div><div class=\"field\"><label>Au</label><input id=\"periodEnd-${p.id}\" type=\"date\"></div></div><div class=\"field\"><label>Statut</label><select id=\"periodStatus-${p.id}\"><option value=\"validated\">Déjà validé</option><option value=\"pending\">En attente</option></select></div>${button('Ajouter cette période','add-period','secondary','data-plan-id=\"'+p.id+'\"')}"""
+
+          new = """${p.role!=='principal'?`<h3>Périodes d’application</h3>${periods.length?periods.map(x=>`<div class=\"history-item\"><div class=\"row\"><span>${C.escapeHtml(C.frenchDate(x.start,{day:'2-digit',month:'2-digit',year:'numeric'}))} → ${C.escapeHtml(C.frenchDate(x.end,{day:'2-digit',month:'2-digit',year:'numeric'}))}</span><span>${x.status==='pending'?'En attente':'Validé'}</span></div>${button('Retirer','remove-period','ghost','data-period-id=\"'+x.id+'\"')}</div>`).join(''):'<p class=\"muted\">Aucune période particulière.</p>'}<div class=\"weekgrid\"><div class=\"field\"><label>Du</label><input id=\"periodStart-${p.id}\" type=\"date\"></div><div class=\"field\"><label>Au</label><input id=\"periodEnd-${p.id}\" type=\"date\"></div></div><div class=\"field\"><label>Statut</label><select id=\"periodStatus-${p.id}\"><option value=\"validated\">Déjà validé</option><option value=\"pending\">En attente</option></select></div>${button('Ajouter cette période','add-period','secondary','data-plan-id=\"'+p.id+'\"')}`:''}"""
+
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one planning-period UI block, found {count}. No file written.')
+
+          text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+
+          # Safety checks: principal is excluded; human-readable dates use the shared formatter.
+          patched = path.read_text(encoding='utf-8')
+          assert "p.role!=='principal'?`<h3>Périodes d’application</h3>" in patched
+          assert "C.frenchDate(x.start" in patched and "C.frenchDate(x.end" in patched
+      - name: Commit the app change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ui.js
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: reserve planning periods for replacement plans"
+          git push
