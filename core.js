@@ -30,16 +30,18 @@ window.MH = window.MH || {};
   function validSegments(day){return Array.isArray(day?.segments)?day.segments.filter(s=>s&&s.start):[]}
   function openSegment(day){const ss=validSegments(day);return ss.length&&!ss.at(-1).end?ss.at(-1):null}
   function pauseFor(day){return Math.max(0,Number(day?.pauseMinutes??0)||0)}
-  function worked(day){
+  function worked(day,pauseMinutes=pauseFor(day)){
     if(!day)return null;
     const ss=validSegments(day);
-    if(ss.length){let total=0,complete=0;for(const s of ss){const a=mins(s.start),b=mins(s.end);if(a!=null&&b!=null&&b>=a){total+=b-a;complete++}}return complete?Math.max(0,total-pauseFor(day)):null}
-    if(day.workedMinutes!=null)return Math.max(0,Number(day.workedMinutes)-pauseFor(day));
-    const a=mins(day.arrival),b=mins(day.departure);if(a==null||b==null||b<a)return null;return Math.max(0,b-a-pauseFor(day));
+    const duration=(start,end)=>{const a=mins(start),b=mins(end);return a==null||b==null?null:(b<a?b+1440:b)-a};
+    const pause=Math.max(0,Number(pauseMinutes)||0);
+    if(ss.length){let total=0,complete=0;for(const s of ss){const n=duration(s.start,s.end);if(n!=null){total+=n;complete++}}return complete?Math.max(0,total-pause):null}
+    if(day.workedMinutes!=null)return Math.max(0,Number(day.workedMinutes)-pause);
+    const n=duration(day.arrival,day.departure);return n==null?null:Math.max(0,n-pause);
   }
   function ensureSegments(day){if(Array.isArray(day.segments))return day.segments;day.segments=[];if(day.arrival)day.segments.push({start:day.arrival,end:day.departure||null,label:''});delete day.arrival;delete day.departure;delete day.workedMinutes;return day.segments}
-  function segmentText(day){const ss=validSegments(day);return ss.length?ss.map(s=>`${s.start}–${s.end||'…'}`).join(' · '):'—'}
-  function defaultConfig(){const today=dateKey();return{weeklyTarget:35,pause:30,personName:'',employmentName:'Mon emploi',employmentStart:today,contractEnd:'',calendarUrl:'',balanceAlertNegative:20,balanceAlertPositive:20,balanceReturnDelayValue:'',balanceReturnDelayUnit:'weeks',alsaceMoselle:false,scheduleVersions:[{effectiveFrom:today,weeklyTarget:35,schedule:clone(DEFAULT_SCHEDULE)}],dayTypes:[{id:'normal',code:'NORM',name:'Normal',description:'',start:'09:00',end:'18:30',pause:30,minutes:540},{id:'normal-jeudi',code:'JEU',name:'Normal jeudi',description:'',start:'09:00',end:'18:30',pause:30,minutes:480},{id:'repos',code:'OFF',name:'Repos',description:'',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},planningProfiles:[],planningPeriods:[],futureEvents:[],dayOverridesV32:{},annualViewYear:new Date().getFullYear()}}
+  function segmentText(day){const ss=validSegments(day);return ss.length?ss.map(s=>{const a=mins(s.start),b=mins(s.end);return `${s.start}–${s.end||'…'}${a!=null&&b!=null&&b<a?' (+1 j)':''}`}).join(' · '):'—'}
+  function defaultConfig(){const today=dateKey();return{weeklyTarget:35,pause:30,personName:'',employmentName:'Mon emploi',employmentStart:today,contractEnd:'',calendarUrl:'',balanceAlertNegative:20,balanceAlertPositive:20,balanceReturnDelayValue:'',balanceReturnDelayUnit:'weeks',alsaceMoselle:false,scheduleVersions:[{effectiveFrom:today,weeklyTarget:35,schedule:clone(DEFAULT_SCHEDULE)}],dayTypes:[{id:'normal',code:'NORM',name:'Normal',description:'',start:'09:00',end:'18:30',pause:30,minutes:540},{id:'normal-jeudi',code:'NORJ',name:'Normal jeudi',description:'',start:'09:00',end:'18:30',pause:90,minutes:480},{id:'repos',code:'OFF',name:'Repos',description:'',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},planningProfiles:[],planningPeriods:[],futureEvents:[],dayOverridesV32:{},annualViewYear:new Date().getFullYear()}}
   function migrate(raw){
     const s=raw&&typeof raw==='object'?raw:{};s.config=s.config&&typeof s.config==='object'?s.config:{};const d=defaultConfig(),c=s.config;
     for(const [k,v] of Object.entries(d))if(c[k]==null)c[k]=clone(v);
@@ -53,7 +55,13 @@ window.MH = window.MH || {};
     c.planningPeriods=Array.isArray(c.planningPeriods)?c.planningPeriods:[];c.futureEvents=Array.isArray(c.futureEvents)?c.futureEvents:[];c.dayOverridesV32=c.dayOverridesV32&&typeof c.dayOverridesV32==='object'?c.dayOverridesV32:{};
     c.scheduleVersions=Array.isArray(c.scheduleVersions)&&c.scheduleVersions.length?c.scheduleVersions:d.scheduleVersions;c.annualViewYear=Number(c.annualViewYear)||new Date().getFullYear();
     for(const [k,day] of Object.entries(s.days)){
-      day.note=day.note||'';if(day.pauseMinutes==null)day.pauseMinutes=Number(c.pause||0);ensureSegments(day);
+      day.note=day.note||'';
+      /* Les imports historiques nommaient la pause réelle `pause`. Elle est
+         certaine et doit rester prioritaire sur le planning. */
+      if(day.pause!=null&&day.pauseExplicit==null){day.pauseMinutes=Math.max(0,Number(day.pause)||0);day.pauseExplicit=true}
+      else if(day.pauseMinutes==null)day.pauseMinutes=Number(c.pause||0);
+      delete day.pause;
+      ensureSegments(day);
       if(day.dayTypeId&&!c.dayOverridesV32[k])c.dayOverridesV32[k]={dayTypeId:day.dayTypeId,part:'full',boundary:'',updatedAt:k,legacy:true};
       if(day.eventType&&!c.futureEvents.some(e=>e.start===k&&e.end===k&&e.type===day.eventType))c.futureEvents.push({id:uid('evt'),type:day.eventType,comment:'',start:k,end:k,part:'full',splitTime:'',status:'validated',createdAt:k,validatedAt:k,legacy:true});
       delete day.dayTypeId;delete day.eventType;

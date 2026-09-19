@@ -4,8 +4,7 @@
  * Rôle de ce module :
  * - une journée prévue sert de modèle de départ ;
  * - le pointage réel remplace seulement les valeurs réellement saisies ;
- * - une pause héritée du planning est matérialisée dans la journée réelle afin
- *   que l'affichage, les calculs et l'éditeur lisent tous la même valeur ;
+ * - la pause effective vient du moteur métier commun ;
  * - une pause modifiée manuellement reste explicitement prioritaire ;
  * - une plage peut se terminer après minuit sans changer de journée de travail.
  *
@@ -16,43 +15,6 @@ window.MH = window.MH || {};
 (function(MH){
   'use strict';
   const C=MH.core,D=MH.domain,S=()=>C.state;
-
-  /** Durée brute d'une plage. Une heure de fin plus petite signifie J+1. */
-  function overnightDuration(start,end){
-    const a=C.mins(start),b=C.mins(end);
-    if(a==null||b==null)return null;
-    return (b<a?b+1440:b)-a;
-  }
-
-  /**
-   * Calcul unique du temps réellement travaillé.
-   * La pause lue ici est celle stockée sur la journée réelle. Le présent
-   * module veille justement à ce qu'elle soit synchronisée avec son origine.
-   */
-  C.worked=function(day){
-    if(!day)return null;
-    const ss=C.validSegments(day);
-    if(ss.length){
-      let total=0,complete=0;
-      for(const s of ss){
-        const n=overnightDuration(s.start,s.end);
-        if(n!=null){total+=n;complete++}
-      }
-      return complete?Math.max(0,total-C.pauseFor(day)):null;
-    }
-    if(day.workedMinutes!=null)return Math.max(0,Number(day.workedMinutes)-C.pauseFor(day));
-    const n=overnightDuration(day.arrival,day.departure);
-    return n==null?null:Math.max(0,n-C.pauseFor(day));
-  };
-
-  /** Texte commun des plages, avec indication explicite d'un passage à J+1. */
-  C.segmentText=function(day){
-    const ss=C.validSegments(day);
-    return ss.length?ss.map(s=>{
-      const a=C.mins(s.start),b=C.mins(s.end);
-      return `${s.start}–${s.end||'…'}${a!=null&&b!=null&&b<a?' (+1 j)':''}`;
-    }).join(' · '):'—';
-  };
 
   /** Pause prévue par le planning effectivement applicable à cette date. */
   function inheritedPause(k){
@@ -93,10 +55,15 @@ window.MH = window.MH || {};
     }else if(segments.length===1&&!segments[0].end&&x.requiredWork>0&&base.end){
       segments[0].end=base.end;
     }
+    /*
+     * Une pause n'est prioritaire sur le planning que si elle a été marquée
+     * comme volontairement personnalisée. Les anciennes journées, créées avant
+     * l'ajout de ce marqueur, héritent donc elles aussi de la journée type.
+     */
     const explicit=stored?.pauseExplicit===true;
     return {
       stored,x,segments,
-      pause:explicit?C.pauseFor(stored):inheritedPause(k),
+      pause:D.actualPause(k,stored),
       pauseExplicit:explicit,
       note:stored?.note||''
     };
@@ -137,22 +104,8 @@ window.MH = window.MH || {};
     MH.ui?.renderAll?.();
   }
 
-  /**
-   * Répare uniquement les journées déjà marquées comme « pause héritée ».
-   * On ne touche jamais aux anciennes journées sans marqueur, car on ne peut
-   * pas savoir honnêtement si leur pause avait été choisie manuellement.
-   */
-  function normalizeKnownInheritedPauses(){
-    let changed=false;
-    for(const [k,d] of Object.entries(S().days||{})){
-      if(d?.pauseExplicit===false)changed=syncInheritedPause(k,d)||changed;
-    }
-    if(changed)C.save();
-  }
-
   /** Branche les différents boutons de l'interface sur cette logique unique. */
   function install(){
-    normalizeKnownInheritedPauses();
     document.addEventListener('click',e=>{
       const b=e.target.closest('[data-action],[data-actual-action]');if(!b)return;
       const custom=b.dataset.actualAction;
