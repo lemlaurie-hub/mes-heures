@@ -5,7 +5,7 @@
  * conservés dans un cache versionné. Changer CACHE force le remplacement de
  * l'ancienne version après un déploiement.
  */
-const CACHE='mes-heures-v47-planning-periods-ui';
+const CACHE='mes-heures-v48-real-before-ui';
 const ASSETS=['./','./index.html','./styles.css','./core.js','./domain.js','./v17.js','./ui.js','./actual-day.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
