@@ -264,6 +264,7 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - jour prévu à 0 h et sans donnée réelle incorrectement affiché « À compléter » : son état commun est désormais « Validée » dès que sa date est atteinte ;
 - Historique > Semaines : chaque semaine est désormais dépliable jusqu’aux journées et à leur éditeur.
 - calendrier annuel : une semaine terminée ouvre désormais ses données réelles ; les journées manquantes sont signalées en rouge, tandis que le présent et le futur restent en mode planning prévu.
+- calendrier annuel : un contour orange signale une semaine encore fondée sur un total consolidé ; un contour rouge signale une semaine fondée sur le réel journalier mais incomplète. Le contour vert reste réservé à la semaine en cours.
 - anciennes consolidations : ressaisie progressive des journées et remplacement uniquement après validation explicite, avec archivage de l’ancien total.
 - navigation de reconstitution : ajout d’événement depuis la journée et retour automatique à la semaine après enregistrement.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.

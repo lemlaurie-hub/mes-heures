@@ -117,6 +117,8 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.equal(rows[1].deltaMinutes,0);
   assert.equal(rows[2].status,'En cours');
   assert.equal(rows[2].deltaMinutes,null,'la semaine courante ne doit pas inventer un écart final');
+  assert.equal(D.weekActualState('2026-08-31').code,'consolidated','une semaine encore consolidée doit être repérée en orange');
+  assert.equal(D.weekActualState('2026-09-07').code,'actual','une semaine réelle complète ne doit pas recevoir d’alerte');
   loadConsumers(MH);
   const weeksHtml=MH.ui.__historyWeeks();
   for(const label of ['S35','S36','S37'])assert.match(weeksHtml,new RegExp(label));
@@ -146,6 +148,7 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   const {domain:D}=app(state),s36=D.historyWeekRows().find(row=>row.week===36);
   assert.equal(s36.status,'À compléter','une semaine passée avec des jours travaillés manquants reste incomplète');
   assert.equal(s36.deltaMinutes,null,'une semaine incomplète ne devient pas artificiellement une dette de 35 h');
+  assert.equal(D.weekActualState('2026-09-07').code,'incomplete','une semaine réelle incomplète doit être repérée en rouge');
   const MH=app(state);loadConsumers(MH);
   const html=MH.ui.__weekDialogContent('2026-09-07');
   assert.match(html,/needs-completion/,'les journées manquantes doivent être signalées en rouge');
