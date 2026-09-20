@@ -76,6 +76,8 @@ window.MH = window.MH || {};
 
   /** Ouvre le même éditeur, quel que soit l'écran depuis lequel on arrive. */
   function open(k){
+    const weekDialog=document.querySelector('#weekDialog');
+    if(weekDialog){try{weekDialog.close()}catch{}weekDialog.remove()}
     const m=editModel(k);close();
     const esc=C.escapeHtml,attr=C.escapeAttr;
     document.body.insertAdjacentHTML('beforeend',`<dialog id="actualDialog" class="app-modal"><div class="row"><h2>${m.stored?'Modifier':'Ajouter'} une journée</h2><button type="button" class="ghost" data-actual-action="close">Fermer</button></div><div class="field"><label>Date</label><input id="actualDate" type="date" max="${C.dateKey()}" value="${k}"></div><p class="muted compact">Le planning prévu sert de base. Les valeurs déjà pointées le remplacent uniquement là où elles existent.</p><div class="segment-editor">${[0,1,2,3,4].map(i=>`<div class="segment-line"><strong>Plage ${i+1}</strong><input class="actual-start" type="time" value="${attr(m.segments[i]?.start||'')}"><input class="actual-end" type="time" value="${attr(m.segments[i]?.end||'')}"></div>`).join('')}</div><p class="muted compact">Si la fin est après minuit, saisis simplement l’heure du lendemain : 00:20 après 09:31 sera compté comme 00:20 (+1 jour).</p><div class="field"><label>Pause non travaillée (minutes)</label><input id="actualPause" type="number" min="0" step="5" value="${m.pause}" data-inherited="${m.pause}"></div><div class="field"><label>Remarque</label><textarea id="actualNote">${esc(m.note)}</textarea></div><button type="button" data-actual-action="save">Enregistrer cette journée</button></dialog>`);

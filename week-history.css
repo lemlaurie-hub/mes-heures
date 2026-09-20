@@ -45,3 +45,25 @@
   margin-top: 8px;
   padding: 9px 12px;
 }
+
+.needs-completion {
+  margin: 8px 0;
+  padding: 12px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fff1f2;
+}
+
+.needs-completion .row > span {
+  color: #b42318;
+  font-weight: 800;
+}
+
+.week-actual-summary {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f4f6f8;
+}

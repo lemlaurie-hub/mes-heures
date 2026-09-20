@@ -50,7 +50,7 @@ function app(state){
 function loadConsumers(MH){
   const context=MH.__testContext;
   const uiSource=fs.readFileSync(path.join(ROOT,'ui.js'),'utf8')
-    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__weekHistoryItem:weekHistoryItem,__historyWeeks:historyWeeks,__historyYears:historyYears,toast,');
+    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__weekHistoryItem:weekHistoryItem,__weekDialogContent:weekDialogContent,__referenceWeekContent:referenceWeekContent,__historyWeeks:historyWeeks,__historyYears:historyYears,toast,');
   vm.runInContext(uiSource,context,{filename:'ui.js'});
   const exportSource=fs.readFileSync(path.join(ROOT,'v17.js'),'utf8')
     .replace('MH.exports={exportCsv,','MH.exports={__dayRow:dayRow,__weekSummary:weekSummary,exportCsv,');
@@ -122,6 +122,18 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.match(weeksHtml,/data-date="2026-09-07"/,'le détail doit permettre de modifier une journée ancienne');
   assert.doesNotMatch(weeksHtml,/>2026-09-14</,'l’interface ne doit pas afficher la date ISO technique comme texte visible');
   assert.equal(MH.exports.__weekSummary('2026-09-07').delta,0,'le PDF doit lire la même semaine calculée');
+  const pastPlanningHtml=MH.ui.__weekDialogContent('2026-09-07');
+  assert.match(pastPlanningHtml,/Données réelles/,'une semaine passée du planning doit afficher le réel');
+  assert.match(pastPlanningHtml,/09:00–18:30/,'les plages réelles doivent être visibles depuis le planning');
+  assert.match(pastPlanningHtml,/data-action="edit-actual"/,'une journée passée doit être corrigeable depuis le planning');
+  assert.doesNotMatch(pastPlanningHtml,/Changer de planning/,'une semaine passée ne doit plus ouvrir l’éditeur du prévu');
+  const currentPlanningHtml=MH.ui.__weekDialogContent('2026-09-14');
+  assert.match(currentPlanningHtml,/Planning prévu/,'la semaine courante doit conserver le planning prévu');
+  assert.match(currentPlanningHtml,/Changer de planning/);
+  const consolidatedHtml=MH.ui.__weekDialogContent('2026-08-31');
+  assert.match(consolidatedHtml,/Reconstituer les données réelles/);
+  assert.match(consolidatedHtml,/Total consolidé actuel/);
+  assert.match(consolidatedHtml,/disabled/,'le remplacement doit rester bloqué tant que la ressaisie est incomplète');
 }
 
 {
@@ -131,6 +143,35 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   const {domain:D}=app(state),s36=D.historyWeekRows().find(row=>row.week===36);
   assert.equal(s36.status,'À compléter','une semaine passée avec des jours travaillés manquants reste incomplète');
   assert.equal(s36.deltaMinutes,null,'une semaine incomplète ne devient pas artificiellement une dette de 35 h');
+  const MH=app(state);loadConsumers(MH);
+  const html=MH.ui.__weekDialogContent('2026-09-07');
+  assert.match(html,/needs-completion/,'les journées manquantes doivent être signalées en rouge');
+}
+
+{
+  const state=baseState();
+  state.historicalWeeks.push({weekStart:'2026-08-31',week:35,workedMinutes:2100,targetMinutes:2100,deltaMinutes:0,note:'Import initial'});
+  state.days['2026-08-31']=completeDay('09:00','17:30',30);
+  let MH=app(state),{domain:D}=MH,reconstruction=D.weekReconstruction('2026-08-31');
+  assert.equal(reconstruction.complete,false,'une ressaisie partielle ne doit pas remplacer la consolidation');
+  assert.equal(D.weekAccounted('2026-08-31'),2100,'le total consolidé reste la référence pendant la ressaisie');
+  for(const date of ['2026-09-01','2026-09-02'])MH.core.state.days[date]=completeDay('09:00','18:30',30);
+  MH.core.state.days['2026-09-03']=completeDay('09:00','18:30',90);
+  reconstruction=D.weekReconstruction('2026-08-31');
+  assert.equal(reconstruction.complete,true,'les jours prévus à 0 h ne bloquent pas une reconstitution complète');
+  assert.equal(reconstruction.detailedMinutes,2040);
+  assert.equal(reconstruction.differenceMinutes,-60,'la comparaison doit annoncer l’effet avant validation');
+  loadConsumers(MH);
+  assert.doesNotMatch(MH.ui.__weekDialogContent('2026-08-31'),/disabled/,'la validation devient disponible lorsque le détail est complet');
+  const balanceBefore=D.currentBalance();
+  D.replaceConsolidatedWeek('2026-08-31');
+  assert.equal(MH.core.state.historicalWeeks.length,0,'la consolidation active est retirée après validation explicite');
+  assert.equal(MH.core.state.replacedHistoricalWeeks.length,1,'l’ancien total consolidé reste archivé');
+  assert.equal(D.weekAccounted('2026-08-31'),2040,'les journées réelles deviennent la source du total');
+  const rebuilt=D.historyWeekRows().find(row=>row.weekStart==='2026-08-31');
+  assert.equal(rebuilt?.reconstructed,true,'la semaine remplacée reste visible dans l’historique');
+  assert.equal(rebuilt.deltaMinutes,-60);
+  assert.equal(D.currentBalance()-balanceBefore,-60,'le solde sans référence doit intégrer l’écart de la semaine reconstituée');
 }
 
 {
@@ -151,6 +192,27 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
 {
   const {core:C}=app(baseState());
   assert.equal(C.weekStart('2030-01-05'),'2029-12-31','la semaine appartient au mois et à l’année de son lundi');
+}
+
+{
+  const state=baseState();
+  state.balanceReferenceDate='2026-09-13';
+  state.balanceReferenceMinutes=120;
+  for(const date of ['2026-09-14','2026-09-15','2026-09-16'])state.days[date]=completeDay('09:00','18:30',30);
+  state.days['2026-09-17']=completeDay('09:00','18:30',90);
+  const MH=app(state),{domain:D}=MH;
+  assert.equal(D.annualReference(2026)?.date,'2026-09-13','l’année doit reconnaître son point de référence');
+  assert.equal(D.annualReference(2026)?.minutes,120);
+  assert.equal(D.currentBalance(),120,'le compteur doit repartir du solde de référence sans exiger le passé');
+  assert.equal(D.projectedClosingAtYear(2026),120,'la projection de clôture doit partir du solde de référence');
+  loadConsumers(MH);
+  const before=MH.ui.__referenceWeekContent('2026-08-31',D.reference());
+  assert.match(before,/Aucun détail hebdomadaire antérieur n’est exigé/);
+  assert.doesNotMatch(before,/À compléter/,'une semaine couverte par la référence ne doit pas créer de dette fictive');
+  const junction=MH.ui.__referenceWeekContent('2026-09-07',{date:'2026-09-09',minutes:120});
+  assert.match(junction,/Semaine de raccord/);
+  assert.doesNotMatch(junction,/lundi 7 septembre|mardi 8 septembre|mercredi 9 septembre/,'les jours inclus dans la référence ne doivent pas être réclamés');
+  assert.match(junction,/jeudi 10 septembre/,'la saisie reprend au lendemain de la référence');
 }
 
 console.log('Régressions Mes heures : OK');

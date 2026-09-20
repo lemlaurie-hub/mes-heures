@@ -46,6 +46,23 @@ Les anciens scripts `v9`, `v10`, etc. ont été retirés du dépôt. Une fonctio
 - Les semaines peuvent être dépliées pour consulter leurs sept journées et corriger une journée ancienne depuis son bouton « Modifier ».
 - Historique > Semaines, Historique > Années et les exports utilisent la même série hebdomadaire.
 
+## Planning annuel
+
+- Une semaine courante ou future ouvre son planning prévu.
+- Une semaine terminée ouvre ses données réelles, avec accès à la correction de chaque journée.
+- Une journée normalement travaillée mais absente est signalée en rouge « À compléter ».
+- Une ancienne semaine disponible uniquement sous forme de total importé peut être reconstituée progressivement journée par journée.
+- Le total consolidé reste la référence pendant la ressaisie. Une validation explicite, précédée de la comparaison des deux totaux, est nécessaire pour le remplacer par le détail réel.
+- Le total remplacé est archivé afin de conserver une trace de la consolidation d’origine.
+
+## Solde de référence sans historique détaillé
+
+- Une personne peut saisir un solde arrêté à une date, puis commencer la saisie détaillée le lendemain sans répartir ce solde entre les anciennes semaines.
+- Les semaines entièrement couvertes par cette référence ne sont pas marquées « À compléter ».
+- La semaine contenant la date de raccord ne réclame que les journées postérieures à la référence.
+- Lorsque le début de l’année n’est pas détaillé, le Planning affiche le solde de référence, son évolution et le solde projeté au 31/12 ; il n’invente pas de réalisé annuel.
+- Le PDF annuel commence à la semaine de raccord, identifie le solde de référence et omet les faux objectifs et écarts pour la partie antérieure inconnue.
+
 ## Vérifications locales
 
 Lancer les régressions métier avant publication :

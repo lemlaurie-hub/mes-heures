@@ -158,6 +158,38 @@ Les données affichées et celles proposées par « Modifier » doivent provenir
 
 Combine le passé réel, le présent selon les règles définies et le futur prévu. Affiche notamment objectif annuel, réalisé, projection au 31/12, résultat prévu, report N-1 et report N+1 projeté.
 
+Dans le calendrier annuel, le clic sur une semaine dépend de sa position dans le temps :
+
+- semaine terminée : afficher le réel des sept journées et permettre leur correction ;
+- journée normalement travaillée sans donnée réelle : la signaler en rouge « À compléter » ;
+- semaine courante ou future : afficher le planning prévu et ses outils de planification ;
+- semaine historique uniquement consolidée : permettre la ressaisie progressive de ses journées, tout en gardant le total consolidé comme référence jusqu’à validation explicite.
+
+### Reconstitution progressive des semaines consolidées
+
+Une utilisatrice peut ressaisir progressivement les vraies journées d’une ancienne semaine importée sous forme de total.
+
+- Les journées ressaisies sont enregistrées normalement dans `days`.
+- Tant que le remplacement n’est pas validé, tous les calculs continuent d’utiliser `historicalWeeks` : une ressaisie partielle ne fait donc pas dériver le solde.
+- L’écran affiche le total consolidé, le total du détail disponible, leur écart et le nombre de journées attendues déjà complétées.
+- Les jours prévus à 0 h ne bloquent pas la complétude ; un travail réel éventuellement saisi sur ces jours reste compté.
+- Le bouton de remplacement n’est disponible que lorsque toutes les journées normalement travaillées sont renseignées ou couvertes par une valeur retenue.
+- La validation est toujours explicite et précédée d’une confirmation indiquant l’effet chiffré.
+- Après validation, la consolidation d’origine est déplacée dans `replacedHistoricalWeeks` avec sa date de remplacement et le nouveau total. Les journées deviennent alors la source des calculs.
+- Une semaine ainsi reconstituée doit rester visible dans l’historique, même si elle se trouvait au milieu d’une série de semaines consolidées.
+
+### Démarrage depuis un solde sans détail antérieur
+
+Le point de référence (`balanceReferenceDate` et `balanceReferenceMinutes`) couvre toute la période jusqu’à la date indiquée incluse. Il n’a pas à être découpé artificiellement en semaines consolidées.
+
+- Le calcul détaillé commence le lendemain de la date de référence.
+- Une semaine entièrement antérieure à cette date n’a rien à compléter.
+- Pour la semaine de raccord, seules les journées postérieures à la référence sont demandées.
+- Si la référence se trouve dans l’année consultée, les indicateurs « objectif annuel », « réalisé annuel » et « résultat annuel » ne doivent pas être affichés comme s’ils étaient connus.
+- À leur place, afficher le solde de référence, le solde actuel, l’évolution acquise depuis la référence, le solde projeté au 31/12 et le report N+1 projeté.
+- Le PDF annuel commence à la semaine de raccord. Sur cette première semaine partielle, ne pas afficher un objectif ou un écart hebdomadaire complet qui serait trompeur.
+- Les données antérieures éventuellement ressaisies restent informatives tant que la date de référence n’est pas déplacée volontairement.
+
 ### Docs admin
 
 Destiné aux exports, imports, sauvegardes et futurs documents administratifs. Une sauvegarde restaurable est différente d’un CSV d’exploitation.
@@ -229,6 +261,9 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - consommateurs vérifiés : Aujourd’hui, Historique, Années, compteurs et exports.
 - jour prévu à 0 h et sans donnée réelle incorrectement affiché « À compléter » : son état commun est désormais « Validée » dès que sa date est atteinte ;
 - Historique > Semaines : chaque semaine est désormais dépliable jusqu’aux journées et à leur éditeur.
+- calendrier annuel : une semaine terminée ouvre désormais ses données réelles ; les journées manquantes sont signalées en rouge, tandis que le présent et le futur restent en mode planning prévu.
+- anciennes consolidations : ressaisie progressive des journées et remplacement uniquement après validation explicite, avec archivage de l’ancien total.
+- solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.
 
 ### Pause et anciennes saisies de S36 — cause identifiée, décision d’attendre
 
@@ -258,6 +293,10 @@ Les tests couvrent actuellement :
 - jour prévu à 0 h mais réellement travaillé ;
 - jour prévu à 0 h sans pointage automatiquement validé ;
 - détail hebdomadaire dépliable avec accès à la modification des journées ;
+- bascule réel/prévu lors de l’ouverture d’une semaine depuis le calendrier annuel ;
+- absence de faux détail pour une semaine seulement consolidée ;
+- maintien du total consolidé pendant une ressaisie partielle, comparaison avant remplacement et conservation de l’ancien total ;
+- exercice partiellement inconnu couvert par un solde de référence, y compris semaine de raccord et PDF annuel ;
 - rattachement d’une semaine à son lundi ;
 - cohérence de l’interface et des exports avec le moteur commun.
 
@@ -268,7 +307,7 @@ Vérifier également la syntaxe des scripts et `git diff --check`.
 - dépôt : `lemlaurie-hub/mes-heures` ;
 - base publiée avant cette correction : `main` au commit `f37a5a5fbaf9eb301d925988c2f66c6bfe352c9d` ;
 - correction de l’état des jours à 0 h et détail dépliable des semaines préparés après cette base ;
-- cache PWA préparé en version 52 ;
+- cache PWA préparé en version 55 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.
