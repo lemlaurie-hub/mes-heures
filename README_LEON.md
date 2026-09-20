@@ -230,11 +230,13 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - jour prévu à 0 h et sans donnée réelle incorrectement affiché « À compléter » : son état commun est désormais « Validée » dès que sa date est atteinte ;
 - Historique > Semaines : chaque semaine est désormais dépliable jusqu’aux journées et à leur éditeur.
 
-### Non résolu
+### Pause et anciennes saisies de S36 — cause identifiée, décision d’attendre
 
-- écart de raccord autour de S36 entre certains calculs annuel, hebdomadaire ou de solde. Observé d’abord à `-1h44`, il apparaît à `-3h54` sur la capture du 20 septembre 2026 après correction de la pause NORJ. Sa cause n’est pas démontrée.
+L’écart de raccord de S36, observé d’abord à `-1h44` puis à `-3h54` après la correction NORJ, a pu être corrigé manuellement. Deux saisies anciennes en étaient la cause : une plage unique commencée l’après-midi conservait une pause prévue, et une journée découpée manuellement en plusieurs plages conservait également une pause en plus des coupures déjà exclues des plages.
 
-Ne jamais masquer cet écart par une régularisation, une constante ou un ajustement décoratif. Il faut démontrer sa provenance dans le code et les données actuels.
+Ces saisies avaient été faites avant que les demi-journées prévues et le multi-plage actuel existent. Ne pas ajouter pour l’instant de déduction automatique fondée sur un créneau de pause supposé : les journées types ne stockent que la durée de pause, pas son horaire, et une telle règle pourrait mal interpréter d’autres journées. Surveiller si le cas se reproduit avec les fonctions actuelles ; ne reprendre ce chantier que sur un exemple actuel reproductible.
+
+Ne jamais masquer un futur écart de ce type par une régularisation, une constante ou un ajustement décoratif. Il faut démontrer sa provenance dans le code et les données actuels.
 
 ## 13. Tests
 
