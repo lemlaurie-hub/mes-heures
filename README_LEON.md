@@ -265,6 +265,7 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - Historique > Semaines : chaque semaine est désormais dépliable jusqu’aux journées et à leur éditeur.
 - calendrier annuel : une semaine terminée ouvre désormais ses données réelles ; les journées manquantes sont signalées en rouge, tandis que le présent et le futur restent en mode planning prévu.
 - calendrier annuel : un contour orange signale une semaine encore fondée sur un total consolidé ; un contour rouge signale une semaine fondée sur le réel journalier mais incomplète. Le contour vert reste réservé à la semaine en cours.
+- notice contextuelle : les grandes cartes comportent un symbole discret `ⓘ` qui ouvre la notice directement sur la rubrique concernée. La rubrique Planning documente le fond gris, les contours vert, orange et rouge, ainsi que le contour en pointillés.
 - anciennes consolidations : ressaisie progressive des journées et remplacement uniquement après validation explicite, avec archivage de l’ancien total.
 - navigation de reconstitution : ajout d’événement depuis la journée et retour automatique à la semaine après enregistrement.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.

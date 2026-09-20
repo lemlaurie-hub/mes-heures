@@ -53,7 +53,7 @@ function app(state){
 function loadConsumers(MH){
   const context=MH.__testContext;
   const uiSource=fs.readFileSync(path.join(ROOT,'ui.js'),'utf8')
-    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__weekHistoryItem:weekHistoryItem,__weekDialogContent:weekDialogContent,__referenceWeekContent:referenceWeekContent,__historyWeeks:historyWeeks,__historyYears:historyYears,toast,');
+    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__weekHistoryItem:weekHistoryItem,__weekDialogContent:weekDialogContent,__referenceWeekContent:referenceWeekContent,__historyWeeks:historyWeeks,__historyYears:historyYears,__infoButton:infoButton,toast,');
   vm.runInContext(uiSource,context,{filename:'ui.js'});
   const exportSource=fs.readFileSync(path.join(ROOT,'v17.js'),'utf8')
     .replace('MH.exports={exportCsv,','MH.exports={__dayRow:dayRow,__weekSummary:weekSummary,exportCsv,');
@@ -120,6 +120,8 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.equal(D.weekActualState('2026-08-31').code,'consolidated','une semaine encore consolidée doit être repérée en orange');
   assert.equal(D.weekActualState('2026-09-07').code,'actual','une semaine réelle complète ne doit pas recevoir d’alerte');
   loadConsumers(MH);
+  assert.match(MH.ui.__infoButton('planning-colors'),/data-topic="planning-colors"/,'le bouton d’information doit cibler la bonne rubrique');
+  assert.match(fs.readFileSync(path.join(ROOT,'ui.js'),'utf8'),/Contour orange[\s\S]*Contour rouge/,'la notice doit expliquer les couleurs du planning');
   const weeksHtml=MH.ui.__historyWeeks();
   for(const label of ['S35','S36','S37'])assert.match(weeksHtml,new RegExp(label));
   assert.match(weeksHtml,/<details[^>]*week-history-item/,'une semaine doit pouvoir être dépliée');
