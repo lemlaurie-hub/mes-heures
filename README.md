@@ -36,12 +36,14 @@ Les anciens scripts `v9`, `v10`, etc. ont été retirés du dépôt. Une fonctio
 - Les pauses certaines provenant des anciens imports (`pause`) sont migrées comme données réelles explicites ; elles ne sont pas remplacées par le planning actuel.
 - Aujourd’hui, Historique, les compteurs et les exports lisent tous `domain.actualPause()` et `domain.actualWorked()`.
 - Une plage dont l’heure de fin est antérieure à l’heure de début se termine le lendemain et reste attachée au jour où elle a commencé.
+- Une journée arrivée à sa date, prévue à 0 h et sans donnée réelle, est automatiquement « Validée » ; elle ne crée aucun faux pointage. Si elle est réellement travaillée, le pointage reste prioritaire.
 
 ## Historique hebdomadaire
 
 - Les semaines importées dans `historicalWeeks` restent les références consolidées.
 - Les semaines postérieures sont reconstruites par `domain.historyWeekRows()` à partir des journées réelles.
 - Une semaine passée avec une journée normalement travaillée encore absente est marquée « À compléter » ; aucun écart définitif n’est inventé.
+- Les semaines peuvent être dépliées pour consulter leurs sept journées et corriger une journée ancienne depuis son bouton « Modifier ».
 - Historique > Semaines, Historique > Années et les exports utilisent la même série hebdomadaire.
 
 ## Vérifications locales

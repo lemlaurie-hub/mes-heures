@@ -1,0 +1,47 @@
+.week-history-item > summary {
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.week-summary-line,
+.week-total small {
+  display: block;
+}
+
+.week-total {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.week-total small {
+  margin-top: 3px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.week-history-item[open] .week-total small {
+  font-size: 0;
+}
+
+.week-history-item[open] .week-total small::after {
+  content: "Masquer";
+  font-size: .75rem;
+}
+
+.week-history-days {
+  margin: 10px 0 0 12px;
+  padding-left: 12px;
+  border-left: 3px solid #e2e8f0;
+}
+
+.week-history-days .history-item:last-child {
+  border-bottom: 0;
+}
+
+.week-history-days button {
+  margin-top: 8px;
+  padding: 9px 12px;
+}

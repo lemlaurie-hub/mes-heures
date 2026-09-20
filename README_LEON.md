@@ -94,7 +94,7 @@ Le planning fournit la base prévue. Le pointage réel remplace uniquement les �
 L’application ne doit jamais inventer une journée travaillée pour compléter ses totaux.
 
 - Une journée normalement travaillée sans pointage reste à traiter.
-- Un jour prévu à 0 h sans pointage n’a rien à traiter.
+- Un jour arrivé à sa date, prévu à 0 h et sans pointage est automatiquement affiché « Validée » ; aucune journée réelle fictive n’est créée.
 - Un jour prévu à 0 h avec un pointage devient une véritable journée travaillée et entre dans les calculs.
 
 Une plage peut se terminer après minuit. Par exemple `09:31 → 00:20` signifie 00:20 le lendemain et reste attaché à la journée où le travail a commencé.
@@ -115,6 +115,8 @@ Les semaines importées dans `historicalWeeks` restent les références consolid
 - semaine courante : `En cours`, sans écart hebdomadaire définitif.
 
 Historique > Semaines, Historique > Années et les exports doivent lire cette même série.
+
+Les lignes de semaines sont dépliables. Leur détail présente les sept journées et permet d’ouvrir l’éditeur « Modifier » pour une journée ancienne. Pour une semaine importée consolidée, le total hebdomadaire reste la référence même si le détail journalier disponible est incomplet.
 
 ## 7. Calculs à ne pas confondre
 
@@ -219,10 +221,12 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - Historique > Semaines arrêté à S35 : S36 et S37 sont maintenant reconstruites par le moteur commun ;
 - duplication de l’éditeur de journée supprimée ;
 - consommateurs vérifiés : Aujourd’hui, Historique, Années, compteurs et exports.
+- jour prévu à 0 h et sans donnée réelle incorrectement affiché « À compléter » : son état commun est désormais « Validée » dès que sa date est atteinte ;
+- Historique > Semaines : chaque semaine est désormais dépliable jusqu’aux journées et à leur éditeur.
 
 ### Non résolu
 
-- écart de raccord de `-1h44` autour de S36 entre certains calculs annuel, hebdomadaire ou de solde.
+- écart de raccord autour de S36 entre certains calculs annuel, hebdomadaire ou de solde. Observé d’abord à `-1h44`, il apparaît à `-3h54` sur la capture du 20 septembre 2026 après correction de la pause NORJ. Sa cause n’est pas démontrée.
 
 Ne jamais masquer cet écart par une régularisation, une constante ou un ajustement décoratif. Il faut démontrer sa provenance dans le code et les données actuels.
 
@@ -244,17 +248,19 @@ Les tests couvrent actuellement :
 - continuité S35–S37 ;
 - semaine passée incomplète ;
 - jour prévu à 0 h mais réellement travaillé ;
+- jour prévu à 0 h sans pointage automatiquement validé ;
+- détail hebdomadaire dépliable avec accès à la modification des journées ;
 - rattachement d’une semaine à son lundi ;
 - cohérence de l’interface et des exports avec le moteur commun.
 
 Vérifier également la syntaxe des scripts et `git diff --check`.
 
-## 14. État au 19 septembre 2026
+## 14. État au 20 septembre 2026
 
 - dépôt : `lemlaurie-hub/mes-heures` ;
-- base publiée avant cette reprise : `main` au commit `f3f662a` ;
-- correction pause/semaines et présente passation préparées et testées après cette base ;
-- cache PWA préparé en version 51 ;
+- base publiée avant cette correction : `main` au commit `f37a5a5fbaf9eb301d925988c2f66c6bfe352c9d` ;
+- correction de l’état des jours à 0 h et détail dépliable des semaines préparés après cette base ;
+- cache PWA préparé en version 52 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.

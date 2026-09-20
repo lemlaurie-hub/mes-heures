@@ -50,7 +50,7 @@ function app(state){
 function loadConsumers(MH){
   const context=MH.__testContext;
   const uiSource=fs.readFileSync(path.join(ROOT,'ui.js'),'utf8')
-    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__historyWeeks:historyWeeks,__historyYears:historyYears,toast,');
+    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__weekHistoryItem:weekHistoryItem,__historyWeeks:historyWeeks,__historyYears:historyYears,toast,');
   vm.runInContext(uiSource,context,{filename:'ui.js'});
   const exportSource=fs.readFileSync(path.join(ROOT,'v17.js'),'utf8')
     .replace('MH.exports={exportCsv,','MH.exports={__dayRow:dayRow,__weekSummary:weekSummary,exportCsv,');
@@ -117,7 +117,10 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   loadConsumers(MH);
   const weeksHtml=MH.ui.__historyWeeks();
   for(const label of ['S35','S36','S37'])assert.match(weeksHtml,new RegExp(label));
-  assert.doesNotMatch(weeksHtml,/2026-09-14/,'l’interface ne doit pas afficher la date ISO technique');
+  assert.match(weeksHtml,/<details[^>]*week-history-item/,'une semaine doit pouvoir être dépliée');
+  assert.match(weeksHtml,/lundi 7 septembre/,'le détail dépliable doit contenir les journées de la semaine');
+  assert.match(weeksHtml,/data-date="2026-09-07"/,'le détail doit permettre de modifier une journée ancienne');
+  assert.doesNotMatch(weeksHtml,/>2026-09-14</,'l’interface ne doit pas afficher la date ISO technique comme texte visible');
   assert.equal(MH.exports.__weekSummary('2026-09-07').delta,0,'le PDF doit lire la même semaine calculée');
 }
 
@@ -133,9 +136,16 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
 {
   const state=baseState();
   state.days['2026-09-18']=completeDay('09:00','12:00',0);
-  const {domain:D}=app(state);
+  const MH=app(state),{domain:D}=MH;
   assert.equal(D.dayExpectation('2026-09-18').requiredWork,0,'le vendredi reste prévu à 0 h');
   assert.equal(D.actualWorked('2026-09-18'),180,'un pointage un jour prévu à 0 h reste du travail réel');
+  assert.equal(D.actualDayState('2026-09-18').code,'worked','le travail réel reste prioritaire sur le repos prévu');
+  assert.equal(D.actualDayState('2026-09-19').code,'validated-zero','un repos arrivé sans saisie est automatiquement validé');
+  assert.equal(D.actualDayState('2026-09-20').code,'future','un repos futur reste à venir');
+  loadConsumers(MH);
+  assert.match(MH.ui.__dayHistoryItem('2026-09-19'),/>Validée</,'Historique doit valider un jour à 0 h sans pointage');
+  assert.doesNotMatch(MH.ui.__dayHistoryItem('2026-09-19'),/À compléter/);
+  assert.match(MH.ui.__dayHistoryItem('2026-09-18'),/>3h00</,'un repos réellement travaillé affiche sa durée');
 }
 
 {
