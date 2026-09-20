@@ -22,6 +22,12 @@ Une correction locale et sûre peut être faite directement. Une décision fonct
 
 Ne pas rester bloqué sur une méthode technique défaillante : changer d’approche jusqu’à obtenir une solution vérifiée ou une raison précise d’impossibilité.
 
+### Publication GitHub depuis l’environnement Codex
+
+Dans cet environnement, la commande terminal `git push` échoue régulièrement parce qu’aucun identifiant Git n’est configuré. Ne pas insister ni demander à Laurie de transmettre un mot de passe, une clé SSH ou un jeton dans la conversation.
+
+Utiliser directement l’interface GitHub connectée pour créer les objets Git nécessaires et mettre à jour `main`, puis vérifier la tête distante. Le SHA du commit effectivement publié peut différer du SHA du commit local même lorsque leur contenu est identique.
+
 ## 2. Principe architectural
 
 Principe fondamental : **une règle métier = une fonction ou une source de vérité commune**.
