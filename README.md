@@ -54,6 +54,8 @@ Les anciens scripts `v9`, `v10`, etc. ont été retirés du dépôt. Une fonctio
 - Une ancienne semaine disponible uniquement sous forme de total importé peut être reconstituée progressivement journée par journée.
 - Le total consolidé reste la référence pendant la ressaisie. Une validation explicite, précédée de la comparaison des deux totaux, est nécessaire pour le remplacer par le détail réel.
 - Le total remplacé est archivé afin de conserver une trace de la consolidation d’origine.
+- L’éditeur d’une journée permet d’enregistrer puis d’ajouter ou modifier directement l’événement de cette date.
+- Lorsqu’une journée ou son événement est édité depuis une semaine, cette semaine se rouvre après l’enregistrement afin de poursuivre la reconstitution et sa validation.
 
 ## Solde de référence sans historique détaillé
 

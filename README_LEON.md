@@ -177,6 +177,8 @@ Une utilisatrice peut ressaisir progressivement les vraies journées d’une anc
 - La validation est toujours explicite et précédée d’une confirmation indiquant l’effet chiffré.
 - Après validation, la consolidation d’origine est déplacée dans `replacedHistoricalWeeks` avec sa date de remplacement et le nouveau total. Les journées deviennent alors la source des calculs.
 - Une semaine ainsi reconstituée doit rester visible dans l’historique, même si elle se trouvait au milieu d’une série de semaines consolidées.
+- L’éditeur réel propose « Enregistrer puis ajouter/modifier l’événement » : la journée est sauvegardée avant l’ouverture de l’événement, avec sa date déjà renseignée.
+- Si l’éditeur de journée ou d’événement a été ouvert depuis le détail d’une semaine, conserver cette semaine comme contexte de retour et la rouvrir après enregistrement ou retrait. L’utilisatrice doit pouvoir enchaîner la ressaisie puis valider le remplacement sans rechercher une seconde fois la semaine.
 
 ### Démarrage depuis un solde sans détail antérieur
 
@@ -263,6 +265,7 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - Historique > Semaines : chaque semaine est désormais dépliable jusqu’aux journées et à leur éditeur.
 - calendrier annuel : une semaine terminée ouvre désormais ses données réelles ; les journées manquantes sont signalées en rouge, tandis que le présent et le futur restent en mode planning prévu.
 - anciennes consolidations : ressaisie progressive des journées et remplacement uniquement après validation explicite, avec archivage de l’ancien total.
+- navigation de reconstitution : ajout d’événement depuis la journée et retour automatique à la semaine après enregistrement.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.
 
 ### Pause et anciennes saisies de S36 — cause identifiée, décision d’attendre
@@ -297,6 +300,7 @@ Les tests couvrent actuellement :
 - absence de faux détail pour une semaine seulement consolidée ;
 - maintien du total consolidé pendant une ressaisie partielle, comparaison avant remplacement et conservation de l’ancien total ;
 - exercice partiellement inconnu couvert par un solde de référence, y compris semaine de raccord et PDF annuel ;
+- conservation du contexte semaine lors de l’édition d’une journée et de son événement ;
 - rattachement d’une semaine à son lundi ;
 - cohérence de l’interface et des exports avec le moteur commun.
 
@@ -307,7 +311,7 @@ Vérifier également la syntaxe des scripts et `git diff --check`.
 - dépôt : `lemlaurie-hub/mes-heures` ;
 - base publiée avant cette correction : `main` au commit `f37a5a5fbaf9eb301d925988c2f66c6bfe352c9d` ;
 - correction de l’état des jours à 0 h et détail dépliable des semaines préparés après cette base ;
-- cache PWA préparé en version 55 ;
+- cache PWA préparé en version 56 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.

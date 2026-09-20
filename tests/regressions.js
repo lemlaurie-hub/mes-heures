@@ -4,6 +4,9 @@ const path=require('node:path');
 const vm=require('node:vm');
 
 const ROOT=path.resolve(__dirname,'..');
+const actualDaySource=fs.readFileSync(path.join(ROOT,'actual-day.js'),'utf8');
+assert.match(actualDaySource,/data-actual-action="event"/,'l’éditeur réel doit proposer l’ajout ou la modification d’un événement');
+assert.match(actualDaySource,/MH\.ui\?\.openWeek\?\./,'l’éditeur doit pouvoir revenir à la semaine qui l’a ouvert');
 const RealDate=Date;
 class FixedDate extends RealDate{
   constructor(...args){super(...(args.length?args:['2026-09-19T12:00:00Z']))}

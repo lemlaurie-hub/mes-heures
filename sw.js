@@ -5,7 +5,7 @@
  * conservés dans un cache versionné. Changer CACHE force le remplacement de
  * l'ancienne version après un déploiement.
  */
-const CACHE='mes-heures-v55-reference-aware-year';
+const CACHE='mes-heures-v56-editor-return-context';
 const ASSETS=['./','./index.html','./styles.css','./week-history.css','./core.js','./domain.js','./v17.js','./actual-day.js','./ui.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{

@@ -15,6 +15,7 @@ window.MH = window.MH || {};
 (function(MH){
   'use strict';
   const C=MH.core,D=MH.domain,S=()=>C.state;
+  let returnWeek='';
 
   /** Pause prévue par le planning effectivement applicable à cette date. */
   function inheritedPause(k){
@@ -80,7 +81,8 @@ window.MH = window.MH || {};
     if(weekDialog){try{weekDialog.close()}catch{}weekDialog.remove()}
     const m=editModel(k);close();
     const esc=C.escapeHtml,attr=C.escapeAttr;
-    document.body.insertAdjacentHTML('beforeend',`<dialog id="actualDialog" class="app-modal"><div class="row"><h2>${m.stored?'Modifier':'Ajouter'} une journée</h2><button type="button" class="ghost" data-actual-action="close">Fermer</button></div><div class="field"><label>Date</label><input id="actualDate" type="date" max="${C.dateKey()}" value="${k}"></div><p class="muted compact">Le planning prévu sert de base. Les valeurs déjà pointées le remplacent uniquement là où elles existent.</p><div class="segment-editor">${[0,1,2,3,4].map(i=>`<div class="segment-line"><strong>Plage ${i+1}</strong><input class="actual-start" type="time" value="${attr(m.segments[i]?.start||'')}"><input class="actual-end" type="time" value="${attr(m.segments[i]?.end||'')}"></div>`).join('')}</div><p class="muted compact">Si la fin est après minuit, saisis simplement l’heure du lendemain : 00:20 après 09:31 sera compté comme 00:20 (+1 jour).</p><div class="field"><label>Pause non travaillée (minutes)</label><input id="actualPause" type="number" min="0" step="5" value="${m.pause}" data-inherited="${m.pause}"></div><div class="field"><label>Remarque</label><textarea id="actualNote">${esc(m.note)}</textarea></div><button type="button" data-actual-action="save">Enregistrer cette journée</button></dialog>`);
+    const event=D.storedEventsFor(k,true).find(e=>!e.automatic);
+    document.body.insertAdjacentHTML('beforeend',`<dialog id="actualDialog" class="app-modal"><div class="row"><h2>${m.stored?'Modifier':'Ajouter'} une journée</h2><button type="button" class="ghost" data-actual-action="close">Fermer</button></div><div class="field"><label>Date</label><input id="actualDate" type="date" max="${C.dateKey()}" value="${k}"></div><p class="muted compact">Le planning prévu sert de base. Les valeurs déjà pointées le remplacent uniquement là où elles existent.</p><div class="segment-editor">${[0,1,2,3,4].map(i=>`<div class="segment-line"><strong>Plage ${i+1}</strong><input class="actual-start" type="time" value="${attr(m.segments[i]?.start||'')}"><input class="actual-end" type="time" value="${attr(m.segments[i]?.end||'')}"></div>`).join('')}</div><p class="muted compact">Si la fin est après minuit, saisis simplement l’heure du lendemain : 00:20 après 09:31 sera compté comme 00:20 (+1 jour).</p><div class="field"><label>Pause non travaillée (minutes)</label><input id="actualPause" type="number" min="0" step="5" value="${m.pause}" data-inherited="${m.pause}"></div><div class="field"><label>Remarque</label><textarea id="actualNote">${esc(m.note)}</textarea></div><div class="actions"><button type="button" data-actual-action="save">Enregistrer cette journée</button><button type="button" class="secondary" data-actual-action="event">Enregistrer puis ${event?'modifier l’événement':'ajouter un événement'}</button></div></dialog>`);
     document.querySelector('#actualDialog').showModal();
   }
 
@@ -89,7 +91,7 @@ window.MH = window.MH || {};
    * Si la pause est identique au planning, elle reste marquée « héritée » ;
    * sinon elle devient une exception explicite et ne sera plus resynchronisée.
    */
-  function save(){
+  function save(openEvent=false){
     const k=document.querySelector('#actualDate').value;
     const starts=[...document.querySelectorAll('#actualDialog .actual-start')];
     const ends=[...document.querySelectorAll('#actualDialog .actual-end')];
@@ -101,9 +103,13 @@ window.MH = window.MH || {};
     d.pauseExplicit=pause!==inherited;
     d.pauseMinutes=pause;
     C.save();
+    const week=returnWeek;
+    returnWeek='';
     close();
     MH.ui?.toast?.('✓ Journée enregistrée.');
     MH.ui?.renderAll?.();
+    if(openEvent){const event=D.storedEventsFor(k,true).find(e=>!e.automatic);return MH.ui?.openEventEditor?.(k,event?.id||'',week)}
+    if(week)MH.ui?.openWeek?.(week);
   }
 
   /** Branche les différents boutons de l'interface sur cette logique unique. */
@@ -113,13 +119,14 @@ window.MH = window.MH || {};
       const custom=b.dataset.actualAction;
       if(custom==='close'){e.preventDefault();e.stopImmediatePropagation();return close()}
       if(custom==='save'){e.preventDefault();e.stopImmediatePropagation();return save()}
+      if(custom==='event'){e.preventDefault();e.stopImmediatePropagation();return save(true)}
       const a=b.dataset.action;
-      if(a==='edit-actual'){e.preventDefault();e.stopImmediatePropagation();return open(b.dataset.date||C.dateKey())}
+      if(a==='edit-actual'){e.preventDefault();e.stopImmediatePropagation();const k=b.dataset.date||C.dateKey();returnWeek=b.closest('#weekDialog')?C.weekStart(k):'';return open(k)}
       if(['start','resume','set-start'].includes(a)){prepareLiveDay(C.dateKey());C.save()}
       if(a==='save-pause'){const d=C.dayObj();d.pauseExplicit=true;C.save()}
     },true);
     document.addEventListener('change',e=>{
-      if(e.target.id==='actualDate'&&e.target.closest('#actualDialog')&&e.target.value<=C.dateKey())open(e.target.value);
+      if(e.target.id==='actualDate'&&e.target.closest('#actualDialog')&&e.target.value<=C.dateKey()){if(returnWeek)returnWeek=C.weekStart(e.target.value);open(e.target.value)}
     },true);
   }
 
