@@ -15,6 +15,7 @@ window.MH = window.MH || {};
 (function(MH){
   'use strict';
   const C=MH.core,D=MH.domain,S=()=>C.state;
+  const EVENT_TYPES=['Congé','Congé exceptionnel','Récup','Arrêt maladie','Autre'];
   let returnWeek='';
 
   /** Pause prévue par le planning effectivement applicable à cette date. */
@@ -65,6 +66,8 @@ window.MH = window.MH || {};
     return {
       stored,x,segments,
       dayTypeId:S().config.dayOverridesV32?.[k]?.dayTypeId||D.plannedType(k)?.id||'',
+      eventType:D.storedEventsFor(k,true).find(e=>!e.automatic)?.type||'',
+      future:k>C.dateKey(),
       pause:D.actualPause(k,stored),
       pauseExplicit:explicit,
       note:stored?.note||''
@@ -90,14 +93,15 @@ window.MH = window.MH || {};
   }
 
   /** Ouvre le même éditeur, quel que soit l'écran depuis lequel on arrive. */
-  function open(k){
+  function open(k,week=''){
+    returnWeek=week||returnWeek;
     const weekDialog=document.querySelector('#weekDialog');
     if(weekDialog){try{weekDialog.close()}catch{}weekDialog.remove()}
     const m=editModel(k);close();
     const esc=C.escapeHtml,attr=C.escapeAttr;
-    const event=D.storedEventsFor(k,true).find(e=>!e.automatic);
     const visibleSegments=m.segments.length?m.segments:[{}];
-    document.body.insertAdjacentHTML('beforeend',`<dialog id="actualDialog" class="app-modal"><div class="row"><h2>${m.stored?'Modifier':'Ajouter'} une journée</h2><button type="button" class="ghost" data-actual-action="close">Fermer</button></div><div class="field"><label>Date</label><input id="actualDate" type="date" max="${C.dateKey()}" value="${k}"></div><div class="field"><label>Journée type prévue ce jour</label><select id="actualDayType">${(S().config.dayTypes||[]).map(t=>`<option value="${attr(t.id)}" ${t.id===m.dayTypeId?'selected':''}>${esc(t.code)} · ${esc(t.name)}</option>`).join('')}</select><p class="muted compact">Cette attribution ne change que cette date.</p></div><p class="muted compact">Le planning prévu sert de base. Les valeurs déjà pointées le remplacent uniquement là où elles existent.</p><div id="actualSegments" class="segment-editor">${visibleSegments.map(segmentLine).join('')}</div><button type="button" class="ghost add-segment" data-actual-action="add-segment">+ Ajouter une plage</button><p class="muted compact">Si la fin est après minuit, saisis simplement l’heure du lendemain : 00:20 après 09:31 sera compté comme 00:20 (+1 jour).</p><div class="field"><label>Pause non travaillée (minutes)</label><input id="actualPause" type="number" min="0" step="5" value="${m.pause}" data-inherited="${m.pause}"></div><div class="field"><label>Remarque</label><textarea id="actualNote">${esc(m.note)}</textarea></div><div class="actions"><button type="button" data-actual-action="save">Enregistrer cette journée</button><button type="button" class="secondary" data-actual-action="event">${event?'Modifier':'Ajouter'} un événement</button></div></dialog>`);
+    document.body.insertAdjacentHTML('beforeend',`<dialog id="actualDialog" class="app-modal"><div class="row"><h2>${m.stored?'Modifier':'Ajouter'} une journée</h2><button type="button" class="ghost" data-actual-action="close">Fermer</button></div><div class="field"><label>Date</label><input id="actualDate" type="date" value="${k}"></div><div class="field"><label>Journée type prévue ce jour</label><select id="actualDayType">${(S().config.dayTypes||[]).map(t=>`<option value="${attr(t.id)}" ${t.id===m.dayTypeId?'selected':''}>${esc(t.code)} · ${esc(t.name)}</option>`).join('')}</select><p class="muted compact">Cette attribution ne change que cette date.</p></div><div class="field"><label>Événement pour cette journée</label><select id="actualEventType" data-original="${attr(m.eventType)}"><option value="">Aucun</option>${EVENT_TYPES.map(type=>`<option value="${attr(type)}" ${type===m.eventType?'selected':''}>${esc(type)}</option>`).join('')}</select><p class="muted compact">Depuis cet écran, l’événement concerne uniquement cette date.</p></div><p class="muted compact">${m.future?'Les horaires ci-dessous sont le prévu ; ils ne seront pas enregistrés comme du travail réel avant la date.':'Le planning prévu sert de base.'} Les valeurs déjà pointées le remplacent uniquement là où elles existent.</p><div id="actualSegments" class="segment-editor" ${m.future?'data-readonly="true"':''}>${visibleSegments.map(segmentLine).join('')}</div>${m.future?'':'<button type="button" class="ghost add-segment" data-actual-action="add-segment">+ Ajouter une plage</button>'}<p class="muted compact">Si la fin est après minuit, saisis simplement l’heure du lendemain : 00:20 après 09:31 sera compté comme 00:20 (+1 jour).</p><div class="field"><label>Pause non travaillée (minutes)</label><input id="actualPause" ${m.future?'disabled':''} type="number" min="0" step="5" value="${m.pause}" data-inherited="${m.pause}"></div><div class="field"><label>Remarque</label><textarea id="actualNote" ${m.future?'disabled':''}>${esc(m.note)}</textarea></div><div class="actions"><button type="button" data-actual-action="save">Enregistrer cette journée</button></div></dialog>`);
+    if(m.future)document.querySelectorAll('#actualSegments input').forEach(input=>input.disabled=true);
     document.querySelector('#actualDialog').showModal();
   }
 
@@ -113,6 +117,12 @@ window.MH = window.MH || {};
     const segments=starts.map((x,i)=>({start:x.value,end:ends[i].value||null,label:''})).filter(x=>x.start);
     const selectedType=document.querySelector('#actualDayType')?.value||'',override=S().config.dayOverridesV32?.[k],plannedId=D.plannedType(k)?.id||'',currentType=override?.dayTypeId||plannedId;
     if(selectedType&&selectedType!==currentType){if(selectedType===plannedId)D.removeDayOverride(k);else D.saveDayOverride(k,{dayTypeId:selectedType,part:'full',boundary:''})}
+    const eventSelect=document.querySelector('#actualEventType'),selectedEvent=eventSelect?.value||'';
+    if(eventSelect&&selectedEvent!==(eventSelect.dataset.original||''))D.setEventRange(k,k,selectedEvent);
+    const week=returnWeek;
+    if(k>C.dateKey()){
+      returnWeek='';close();MH.ui?.toast?.('✓ Journée prévue enregistrée.');MH.ui?.renderAll?.();if(week)MH.ui?.openWeek?.(week);return;
+    }
     const inherited=inheritedPause(k);
     const pauseInput=document.querySelector('#actualPause');
     const pause=pauseInput.dataset.followType==='true'?inherited:Math.max(0,Number(pauseInput.value)||0);
@@ -120,20 +130,11 @@ window.MH = window.MH || {};
     d.pauseExplicit=pause!==inherited;
     d.pauseMinutes=pause;
     C.save();
-    const week=returnWeek;
     returnWeek='';
     close();
     MH.ui?.toast?.('✓ Journée enregistrée.');
     MH.ui?.renderAll?.();
     if(week)MH.ui?.openWeek?.(week);
-  }
-
-  /** Ouvre l’événement sans créer ni modifier artificiellement une journée réelle. */
-  function openEvent(){
-    const k=document.querySelector('#actualDate').value,week=returnWeek;
-    const event=D.storedEventsFor(k,true).find(e=>!e.automatic);
-    returnWeek='';close();
-    return MH.ui?.openEventEditor?.(k,event?.id||'',week);
   }
 
   /** Branche les différents boutons de l'interface sur cette logique unique. */
@@ -143,16 +144,15 @@ window.MH = window.MH || {};
       const custom=b.dataset.actualAction;
       if(custom==='close'){e.preventDefault();e.stopImmediatePropagation();return close()}
       if(custom==='save'){e.preventDefault();e.stopImmediatePropagation();return save()}
-      if(custom==='event'){e.preventDefault();e.stopImmediatePropagation();return openEvent()}
       if(custom==='add-segment'){e.preventDefault();e.stopImmediatePropagation();const box=document.querySelector('#actualSegments'),count=box.querySelectorAll('.segment-line').length;if(count<5)box.insertAdjacentHTML('beforeend',segmentLine({},count));if(count>=4)b.classList.add('hidden');return}
       if(custom==='remove-segment'){e.preventDefault();e.stopImmediatePropagation();b.closest('.segment-line')?.remove();document.querySelector('[data-actual-action="add-segment"]')?.classList.remove('hidden');return renumberSegments()}
       const a=b.dataset.action;
-      if(a==='edit-actual'){e.preventDefault();e.stopImmediatePropagation();const k=b.dataset.date||C.dateKey();returnWeek=b.closest('#weekDialog')?C.weekStart(k):'';return open(k)}
+      if(a==='edit-actual'){e.preventDefault();e.stopImmediatePropagation();const k=b.dataset.date||C.dateKey(),week=b.closest('#weekDialog')?C.weekStart(k):'';return open(k,week)}
       if(['start','resume','set-start'].includes(a)){prepareLiveDay(C.dateKey());C.save()}
       if(a==='save-pause'){const d=C.dayObj();d.pauseExplicit=true;C.save()}
     },true);
     document.addEventListener('change',e=>{
-      if(e.target.id==='actualDate'&&e.target.closest('#actualDialog')&&e.target.value<=C.dateKey()){if(returnWeek)returnWeek=C.weekStart(e.target.value);open(e.target.value)}
+      if(e.target.id==='actualDate'&&e.target.closest('#actualDialog')&&e.target.value){if(returnWeek)returnWeek=C.weekStart(e.target.value);open(e.target.value)}
       if(e.target.id==='actualDayType'&&e.target.closest('#actualDialog')){const type=D.typeBy(e.target.value),pause=document.querySelector('#actualPause'),starts=[...document.querySelectorAll('#actualSegments .actual-start')],ends=[...document.querySelectorAll('#actualSegments .actual-end')];if(pause){pause.value=Math.max(0,Number(type?.pause)||0);pause.dataset.followType='true'}if(starts.length===1&&!starts[0].value&&!ends[0].value&&type?.start){starts[0].value=type.start;ends[0].value=type.end||''}}
     },true);
     document.addEventListener('input',e=>{if(e.target.id==='actualPause'&&e.target.closest('#actualDialog'))e.target.dataset.followType='false'},true);
