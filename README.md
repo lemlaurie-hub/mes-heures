@@ -26,6 +26,7 @@ Les anciens scripts `v9`, `v10`, etc. ont été retirés du dépôt. Une fonctio
 - Une récupération réduit le travail prévu ; une absence neutralisée crédite la partie prévue concernée.
 - Une modification faite depuis Aujourd’hui, Prévisions ou Réglages agit sur la même donnée métier.
 - Les données restent localement sur l’appareil dans cette version.
+- Une nouvelle installation démarre avec un planning principal entièrement à 0 h et une unique journée `OFF`. Aucun horaire personnel n’est fourni par défaut.
 - L’agenda professionnel est une source de contexte éventuelle, pas une preuve automatique d’heures travaillées.
 
 ## Journées réelles et pauses

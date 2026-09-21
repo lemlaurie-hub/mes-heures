@@ -63,7 +63,24 @@ function loadConsumers(MH){
 function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pauseMinutes,note:''}}
 
 {
-  const {domain:D}=app({});
+  const fresh=app({}),{core:C,domain:D}=fresh;
+  assert.equal(C.state.config.weeklyTarget,0,'une installation vierge ne doit pas inventer un objectif contractuel');
+  assert.equal(C.state.config.pause,0,'une installation vierge ne doit pas reprendre la pause de Laurie');
+  assert.deepEqual(Array.from(C.state.config.dayTypes,t=>t.code),['OFF'],'une installation vierge ne doit contenir aucun horaire personnel');
+  assert.equal(D.weekForecast('2026-09-14'),0,'le planning initial doit être vierge du lundi au dimanche');
+  assert.equal(D.principalPlan().code,'BASE');
+}
+
+{
+  const oldStarter={config:{weeklyTarget:35,pause:30,personName:'',employmentName:'Mon emploi',employmentStart:'2026-09-21',scheduleVersions:[{effectiveFrom:'2026-09-21',weeklyTarget:35}],dayTypes:[{id:'normal',code:'NORM',name:'Normal',start:'09:00',end:'18:30',pause:30,minutes:540},{id:'normal-jeudi',code:'NORJ',name:'Normal jeudi',start:'09:00',end:'18:30',pause:90,minutes:480},{id:'repos',code:'OFF',name:'Repos',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},planningProfiles:[{id:'normal',code:'MJC',name:'Planning principal',role:'principal',days:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},versions:[],archived:false}],planningPeriods:[],futureEvents:[],dayOverridesV32:{}},days:{'2026-09-21':{segments:[],note:'',status:'open',source:'live'}},historicalWeeks:[],balanceAdjustments:[]};
+  const {core:C,domain:D}=app(oldStarter);
+  assert.deepEqual(Array.from(C.state.config.dayTypes,t=>t.code),['OFF'],'l’ancien modèle personnel inutilisé doit être neutralisé après mise à jour');
+  assert.equal(D.principalPlan().code,'BASE');
+  assert.equal(D.weekForecast('2026-09-21'),0);
+}
+
+{
+  const {domain:D}=app(baseState());
   const thursday=D.dayExpectation('2026-09-17').base;
   assert.equal(thursday.type.code,'NORJ');
   assert.equal(thursday.pause,90);
@@ -200,6 +217,17 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
 {
   const {core:C}=app(baseState());
   assert.equal(C.weekStart('2030-01-05'),'2029-12-31','la semaine appartient au mois et à l’année de son lundi');
+}
+
+{
+  const state=baseState();
+  state.balanceReferenceDate='2026-05-30';
+  state.balanceReferenceMinutes=0;
+  const {domain:D}=app(state),rows=D.historyWeekRows();
+  assert.equal(rows[0].weekStart,'2026-06-01','les semaines détaillées doivent commencer au premier lundi suivant la référence');
+  assert.equal(rows[0].status,'À compléter','une semaine sans réel après la référence doit être signalée');
+  assert.equal(D.weekActualState('2026-06-01').code,'incomplete','le Planning doit encadrer en rouge une semaine manquante après la référence');
+  assert.equal(D.weekActualState('2026-05-18').code,'reference','une semaine couverte par le solde de référence ne doit pas recevoir d’alerte');
 }
 
 {

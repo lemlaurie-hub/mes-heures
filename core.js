@@ -5,7 +5,7 @@ window.MH = window.MH || {};
   const KEY='mes-heures-data-v8';
   const OLD_KEYS=['mes-heures-data-v7','mes-heures-data-v6','mes-heures-data-v5','mes-heures-data-v4','mes-heures-data-v3','mes-heures-data-v2','mes-heures-data-v1'];
   const DAY=86400000;
-  const DEFAULT_SCHEDULE={1:{start:'09:00',end:'18:30',minutes:540},2:{start:'09:00',end:'18:30',minutes:540},3:{start:'09:00',end:'18:30',minutes:540},4:{start:'09:00',end:'18:30',minutes:480},5:{start:'',end:'',minutes:0},6:{start:'',end:'',minutes:0},0:{start:'',end:'',minutes:0}};
+  const DEFAULT_SCHEDULE={1:{start:'',end:'',minutes:0},2:{start:'',end:'',minutes:0},3:{start:'',end:'',minutes:0},4:{start:'',end:'',minutes:0},5:{start:'',end:'',minutes:0},6:{start:'',end:'',minutes:0},0:{start:'',end:'',minutes:0}};
   const clone=o=>JSON.parse(JSON.stringify(o));
   const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
   function localKey(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
@@ -41,7 +41,15 @@ window.MH = window.MH || {};
   }
   function ensureSegments(day){if(Array.isArray(day.segments))return day.segments;day.segments=[];if(day.arrival)day.segments.push({start:day.arrival,end:day.departure||null,label:''});delete day.arrival;delete day.departure;delete day.workedMinutes;return day.segments}
   function segmentText(day){const ss=validSegments(day);return ss.length?ss.map(s=>{const a=mins(s.start),b=mins(s.end);return `${s.start}–${s.end||'…'}${a!=null&&b!=null&&b<a?' (+1 j)':''}`}).join(' · '):'—'}
-  function defaultConfig(){const today=dateKey();return{weeklyTarget:35,pause:30,personName:'',employmentName:'Mon emploi',employmentStart:today,contractEnd:'',calendarUrl:'',balanceAlertNegative:20,balanceAlertPositive:20,balanceReturnDelayValue:'',balanceReturnDelayUnit:'weeks',alsaceMoselle:false,scheduleVersions:[{effectiveFrom:today,weeklyTarget:35,schedule:clone(DEFAULT_SCHEDULE)}],dayTypes:[{id:'normal',code:'NORM',name:'Normal',description:'',start:'09:00',end:'18:30',pause:30,minutes:540},{id:'normal-jeudi',code:'NORJ',name:'Normal jeudi',description:'',start:'09:00',end:'18:30',pause:90,minutes:480},{id:'repos',code:'OFF',name:'Repos',description:'',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},planningProfiles:[],planningPeriods:[],futureEvents:[],dayOverridesV32:{},annualViewYear:new Date().getFullYear()}}
+  function defaultConfig(){const today=dateKey();return{weeklyTarget:0,pause:0,personName:'',employmentName:'Mon emploi',employmentStart:today,contractEnd:'',calendarUrl:'',balanceAlertNegative:20,balanceAlertPositive:20,balanceReturnDelayValue:'',balanceReturnDelayUnit:'weeks',alsaceMoselle:false,scheduleVersions:[{effectiveFrom:today,weeklyTarget:0,schedule:clone(DEFAULT_SCHEDULE)}],dayTypes:[{id:'repos',code:'OFF',name:'Repos',description:'',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'repos',2:'repos',3:'repos',4:'repos',5:'repos',6:'repos',0:'repos'},planningProfiles:[],planningPeriods:[],futureEvents:[],dayOverridesV32:{},annualViewYear:new Date().getFullYear()}}
+  /** Reconnaît uniquement l’ancien modèle personnel encore vierge de toute vraie saisie. */
+  function isUnusedLegacyStarter(s,c){
+    const types=c.dayTypes||[],plan=(c.planningProfiles||[])[0],days=plan?.days||{};
+    const exactTypes=types.length===3&&types.some(t=>t.id==='normal'&&t.code==='NORM'&&t.start==='09:00'&&t.end==='18:30'&&Number(t.pause)===30)&&types.some(t=>t.id==='normal-jeudi'&&t.code==='NORJ'&&t.start==='09:00'&&t.end==='18:30'&&Number(t.pause)===90)&&types.some(t=>t.id==='repos'&&t.code==='OFF'&&Number(t.minutes)===0);
+    const exactPlan=(c.planningProfiles||[]).length===1&&plan?.code==='MJC'&&String(days[1])==='normal'&&String(days[2])==='normal'&&String(days[3])==='normal'&&String(days[4])==='normal-jeudi'&&String(days[5])==='repos'&&String(days[6])==='repos'&&String(days[0])==='repos';
+    const meaningfulDay=Object.values(s.days||{}).some(day=>(day?.segments||[]).some(x=>x?.start)||day?.arrival||day?.departure||day?.workedMinutes!=null||day?.retainedMinutes!=null||String(day?.note||'').trim());
+    return!String(c.personName||'').trim()&&exactTypes&&exactPlan&&!meaningfulDay&&!(s.historicalWeeks||[]).length&&!(s.balanceAdjustments||[]).length&&!(c.futureEvents||[]).length&&!String(s.balanceReferenceDate||'');
+  }
   function migrate(raw){
     const s=raw&&typeof raw==='object'?raw:{};s.config=s.config&&typeof s.config==='object'?s.config:{};const d=defaultConfig(),c=s.config;
     for(const [k,v] of Object.entries(d))if(c[k]==null)c[k]=clone(v);
@@ -49,11 +57,14 @@ window.MH = window.MH || {};
     c.dayTypes=Array.isArray(c.dayTypes)&&c.dayTypes.length?c.dayTypes:d.dayTypes;
     for(const t of c.dayTypes){t.id=t.id||uid('type');t.code=String(t.code||t.name||'JOUR').toUpperCase().replace(/\s+/g,'').slice(0,4);t.name=t.name||'Journée';t.description=t.description||'';t.start=t.start||'';t.end=t.end||'';t.pause=Math.max(0,Number(t.pause)||0);if(!Number.isFinite(Number(t.minutes))){const a=mins(t.start),b=mins(t.end);t.minutes=a!=null&&b!=null&&b>=a?Math.max(0,b-a-t.pause):0}else t.minutes=Math.max(0,Number(t.minutes)||0)}
     c.weekPlan=c.weekPlan||d.weekPlan;c.planningProfiles=Array.isArray(c.planningProfiles)?c.planningProfiles:[];
-    if(!c.planningProfiles.length)c.planningProfiles=[{id:'normal',code:'MJC',name:'Planning principal',role:'principal',days:clone(c.weekPlan),versions:[],archived:false}];
+    if(!c.planningProfiles.length)c.planningProfiles=[{id:'principal',code:'BASE',name:'Planning principal',role:'principal',days:clone(c.weekPlan),versions:[],archived:false}];
     for(let i=0;i<c.planningProfiles.length;i++){const p=c.planningProfiles[i];p.id=p.id||uid('plan');p.code=p.code||`P${i+1}`;p.name=p.name||'Planning';p.role=p.role||(p.id==='normal'||i===0?'principal':i===1?'secondary':i===2?'exceptional':'extra');p.days=p.days||clone(c.weekPlan);p.versions=Array.isArray(p.versions)?p.versions:[];p.archived=!!p.archived}
     const principal=c.planningProfiles.find(p=>p.role==='principal')||c.planningProfiles[0];if(principal)principal.role='principal';
     c.planningPeriods=Array.isArray(c.planningPeriods)?c.planningPeriods:[];c.futureEvents=Array.isArray(c.futureEvents)?c.futureEvents:[];c.dayOverridesV32=c.dayOverridesV32&&typeof c.dayOverridesV32==='object'?c.dayOverridesV32:{};
     c.scheduleVersions=Array.isArray(c.scheduleVersions)&&c.scheduleVersions.length?c.scheduleVersions:d.scheduleVersions;c.annualViewYear=Number(c.annualViewYear)||new Date().getFullYear();
+    if(isUnusedLegacyStarter(s,c)){
+      c.weeklyTarget=d.weeklyTarget;c.pause=d.pause;c.scheduleVersions=clone(d.scheduleVersions);c.dayTypes=clone(d.dayTypes);c.weekPlan=clone(d.weekPlan);c.planningProfiles=[{id:'principal',code:'BASE',name:'Planning principal',role:'principal',days:clone(d.weekPlan),versions:[],archived:false}];c.planningPeriods=[];c.dayOverridesV32={};
+    }
     for(const [k,day] of Object.entries(s.days)){
       day.note=day.note||'';
       /* Les imports historiques nommaient la pause réelle `pause`. Elle est

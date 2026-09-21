@@ -75,7 +75,8 @@ window.MH = window.MH || {};
     }));
     const latest=[...rows.keys()].sort().at(-1);
     const actualStarts=Object.keys(S().days||{}).filter(k=>k<=C.dateKey()).map(k=>C.weekStart(k)).sort();
-    const first=latest?C.addDays(latest,7):(actualStarts[0]||current);
+    const ref=reference(),firstAfterReference=ref?C.addDays(C.weekStart(ref.date),7):'';
+    const first=latest?C.addDays(latest,7):(firstAfterReference&&firstAfterReference<=current?firstAfterReference:(actualStarts[0]||current));
     for(let ws=first;ws<=end;ws=C.addDays(ws,7)){
       const isCurrent=ws===current,ready=!isCurrent&&weekReadyForBalance(ws),worked=weekAccounted(ws),target=weeklyObjective(ws);
       rows.set(ws,{weekStart:ws,week:C.weekNumber(ws),workedMinutes:worked,targetMinutes:target,deltaMinutes:ready?worked-target:null,eventType:weekInfo(ws).events.join(', '),note:'',status:isCurrent?'En cours':ready?'Calculée':'À compléter',consolidated:false,current:isCurrent});
@@ -91,6 +92,12 @@ window.MH = window.MH || {};
     const row=historyWeekRows(ws).find(w=>w.weekStart===ws);
     if(row?.consolidated)return{code:'consolidated',label:'Total consolidé, détail réel à ressaisir'};
     if(row?.status==='À compléter')return{code:'incomplete',label:'Données réelles incomplètes'};
+    const ref=reference(),days=C.weekDays(ws);
+    if(ref&&days[6]<=ref.date)return{code:'reference',label:'Incluse dans le solde de référence'};
+    if(ref&&ws===C.weekStart(ref.date)){
+      const missing=days.filter(k=>k>ref.date).some(k=>actualDayState(k).code==='missing');
+      return missing?{code:'incomplete',label:'Données réelles incomplètes après le solde de référence'}:{code:'actual',label:'Données réelles complètes après le solde de référence'};
+    }
     return{code:'actual',label:'Données réelles complètes'};
   }
   function weekInfo(ws){const codes=new Set(),events=[],hols=[],overrides=[],days=[];let minutes=0,pending=false;for(const k of C.weekDays(ws)){const p=activePlan(k);if(p)codes.add(p.code||p.name);const ex=dayExpectation(k,true);minutes+=ex.retainedForecast;for(const e of ex.events){if(e.automatic){if(!hols.includes(e.comment))hols.push(e.comment)}else{if(!events.includes(e.type))events.push(e.type);if(e.status==='pending')pending=true}}if(cfg().dayOverridesV32?.[k])overrides.push(k);days.push({k,plan:p,expectation:ex})}const principal=principalPlan()?.code||'';return{ws,code:codes.size>1?'MIXTE':([...codes][0]||'—'),minutes,events,holidays:hols,overrides,pending,special:codes.size>1||events.length||hols.length||overrides.length||[...codes].some(c=>c!==principal),days}}

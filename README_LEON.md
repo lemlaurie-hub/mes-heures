@@ -68,6 +68,12 @@ Conséquences :
 - aucun compte ni serveur central ne rassemble les relevés ;
 - les PDF mensuels et annuels servent à transmettre volontairement les données.
 
+Une installation vierge ne reprend aucune donnée de Laurie : objectif et pause à 0, unique journée type `OFF`, planning principal `BASE` affecté à `OFF` du lundi au dimanche. Les installations existantes conservent leur configuration locale lors des mises à jour.
+
+Migration de sécurité : l’ancien modèle `MJC`/`NORM`/`NORJ` est automatiquement neutralisé seulement s’il correspond exactement au modèle initial et qu’aucune donnée réelle, aucun événement, aucun solde de référence, aucune consolidation et aucun nom de personne n’ont encore été enregistrés. Cette règle permet de corriger une installation ouverte avant la version neutre sans toucher aux utilisatrices déjà configurées.
+
+Lorsqu’un solde de référence ancien est saisi sans détail journalier ultérieur, les semaines complètes sont construites à partir du premier lundi suivant cette référence. Elles apparaissent en rouge dans Planning tant que leurs journées attendues ne sont pas renseignées. Les semaines entièrement couvertes par le solde de référence restent sans alerte.
+
 L’adresse du N+1 doit pouvoir être enregistrée dans les paramètres. À terme, le PDF pourra être partagé par l’application de messagerie choisie sur le téléphone. L’application prépare le document et le destinataire ; l’utilisatrice confirme elle-même l’envoi. Aucun envoi automatique en arrière-plan.
 
 ## 4. Modèle fonctionnel
