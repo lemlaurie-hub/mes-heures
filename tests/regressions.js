@@ -5,6 +5,7 @@ const vm=require('node:vm');
 
 const ROOT=path.resolve(__dirname,'..');
 const actualDaySource=fs.readFileSync(path.join(ROOT,'actual-day.js'),'utf8');
+const projectionSource=fs.readFileSync(path.join(ROOT,'projection-detail.js'),'utf8');
 assert.match(actualDaySource,/id="actualEventType"/,'l’éditeur réel doit attribuer directement un événement à la journée');
 assert.match(actualDaySource,/setEventRange\(k,k/,'l’événement choisi depuis une journée doit rester limité à cette date');
 assert.doesNotMatch(actualDaySource,/save\(true\)/,'ouvrir un événement ne doit pas enregistrer artificiellement la journée');
@@ -13,6 +14,8 @@ assert.match(actualDaySource,/dataset\.followType/,'changer de journée type doi
 assert.match(actualDaySource,/data-actual-action="add-segment"/,'les plages supplémentaires doivent être ajoutées à la demande');
 assert.doesNotMatch(actualDaySource,/\[0,1,2,3,4\]\.map/,'l’éditeur ne doit plus afficher cinq plages vides immédiatement');
 assert.match(actualDaySource,/MH\.ui\?\.openWeek\?\./,'l’éditeur doit pouvoir revenir à la semaine qui l’a ouvert');
+assert.match(projectionSource,/rows\.map/,'le détail de projection doit afficher toutes les semaines');
+assert.doesNotMatch(projectionSource,/nonZero\.map/,'les semaines sans écart ne doivent plus disparaître du détail');
 const RealDate=Date;
 class FixedDate extends RealDate{
   constructor(...args){super(...(args.length?args:['2026-09-19T12:00:00Z']))}
@@ -296,6 +299,53 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   state.days['2026-09-07']=completeDay('09:00','18:30',30);
   const {domain:D}=app(state);
   assert.equal(D.historicalCarryBefore('2026-09-14'),0,'une semaine réelle incomplète ne doit pas créer un solde artificiel');
+}
+
+{
+  const state=baseState();
+  state.config.dayTypes.push({id:'acm',code:'ACM',name:'Direction ACM',start:'09:00',end:'16:30',pause:30,minutes:420});
+  state.config.planningProfiles.push({id:'dir',code:'DIR',name:'Direction',role:'secondary',versions:[],archived:false,days:{1:'acm',2:'acm',3:'acm',4:'acm',5:'acm',6:'repos',0:'repos'}});
+  state.config.planningPeriods.push({id:'dir-week',profileId:'dir',start:'2026-12-21',end:'2026-12-27',status:'validated'});
+  state.config.dayOverridesV32={
+    '2026-12-21':{dayTypeId:'normal',part:'full',boundary:'',legacy:true},
+    '2026-12-23':{dayTypeId:'normal',part:'full',boundary:'',legacy:false},
+    '2026-12-24':{dayTypeId:'norj',part:'full',boundary:'',legacy:true},
+    '2026-12-25':{dayTypeId:'repos',part:'full',boundary:'',legacy:true}
+  };
+  state.days['2026-12-21']=completeDay('09:00','16:30',30);
+  const {core:C,domain:D}=app(state);
+  assert.equal(D.activePlan('2026-12-25').code,'DIR');
+  assert.equal(D.baseDay('2026-12-21').type.code,'ACM','une ancienne journée MJC ne doit plus masquer DIR');
+  assert.equal(D.baseDay('2026-12-24').type.code,'ACM','NORJ hérité doit être réparé sur une semaine DIR existante');
+  assert.equal(D.baseDay('2026-12-25').type.code,'ACM','OFF hérité ne doit plus neutraliser le vendredi de direction');
+  assert.equal(D.dayExpectation('2026-12-25').credit,420,'Noël doit retenir la durée de la journée ACM prévue');
+  assert.equal(D.baseDay('2026-12-23').type.code,'NORM','une exception journalière explicite doit rester prioritaire');
+  assert.equal(C.state.days['2026-12-21'].segments[0].start,'09:00','la réparation du prévu ne doit pas toucher au réel');
+}
+
+{
+  const state=baseState();
+  state.config.dayTypes.push({id:'acm',code:'ACM',name:'Direction ACM',start:'09:00',end:'16:30',pause:30,minutes:420});
+  state.config.planningProfiles.push({id:'dir',code:'DIR',name:'Direction',role:'secondary',versions:[],archived:false,days:{1:'acm',2:'acm',3:'acm',4:'acm',5:'acm',6:'repos',0:'repos'}});
+  state.config.dayOverridesV32['2026-09-07']={dayTypeId:'normal',part:'full',boundary:'',legacy:false};
+  const {core:C,domain:D}=app(state);
+  D.assignWeekPlanning('dir','2026-09-07');
+  assert.equal(D.baseDay('2026-09-07').type.code,'ACM','changer le planning doit retirer une attribution redondante avec l’ancien planning');
+  assert.equal(C.state.config.dayOverridesV32['2026-09-07'],undefined);
+}
+
+{
+  const state=baseState();
+  state.config.futureEvents.push({id:'monday',type:'Récup',comment:'',start:'2026-09-07',end:'2026-09-07',part:'full',splitTime:'',status:'validated'});
+  let MH=app(state);loadConsumers(MH);
+  const partialHtml=MH.ui.__weekDialogContent('2026-09-07');
+  assert.match(partialHtml,/Événement appliqué à toute la semaine/);
+  assert.match(partialHtml,/id="weekEventChoice" data-original=""/,'un événement journalier ne doit pas apparaître comme événement hebdomadaire');
+  assert.match(partialHtml,/Récup/,'l’événement journalier reste visible dans le détail du jour');
+  MH.domain.setWholeWeekEvent('2026-09-07','Congé');
+  assert.equal(MH.core.state.config.futureEvents.some(e=>e.id==='monday'),true,'ajouter un événement hebdomadaire doit préserver les événements journaliers');
+  const whole=MH.core.state.config.futureEvents.find(e=>e.start==='2026-09-07'&&e.end==='2026-09-13');
+  assert.equal(whole?.type,'Congé');
 }
 
 console.log('Régressions Mes heures : OK');
