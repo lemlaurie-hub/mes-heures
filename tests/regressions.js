@@ -5,7 +5,8 @@ const vm=require('node:vm');
 
 const ROOT=path.resolve(__dirname,'..');
 const actualDaySource=fs.readFileSync(path.join(ROOT,'actual-day.js'),'utf8');
-assert.match(actualDaySource,/data-actual-action="event"/,'l’éditeur réel doit proposer l’ajout ou la modification d’un événement');
+assert.match(actualDaySource,/id="actualEventType"/,'l’éditeur réel doit attribuer directement un événement à la journée');
+assert.match(actualDaySource,/setEventRange\(k,k/,'l’événement choisi depuis une journée doit rester limité à cette date');
 assert.doesNotMatch(actualDaySource,/save\(true\)/,'ouvrir un événement ne doit pas enregistrer artificiellement la journée');
 assert.match(actualDaySource,/id="actualDayType"/,'l’éditeur réel doit permettre d’attribuer une journée type à la date');
 assert.match(actualDaySource,/dataset\.followType/,'changer de journée type doit aussi reprendre sa pause prévue tant que la pause n’est pas personnalisée');
@@ -156,14 +157,31 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.match(pastPlanningHtml,/Données réelles/,'une semaine passée du planning doit afficher le réel');
   assert.match(pastPlanningHtml,/09:00–18:30/,'les plages réelles doivent être visibles depuis le planning');
   assert.match(pastPlanningHtml,/data-action="edit-actual"/,'une journée passée doit être corrigeable depuis le planning');
-  assert.doesNotMatch(pastPlanningHtml,/Changer de planning/,'une semaine passée ne doit plus ouvrir l’éditeur du prévu');
+  assert.match(pastPlanningHtml,/id="weekPlanChoice"/,'une semaine passée doit permettre d’attribuer son planning');
+  assert.match(pastPlanningHtml,/id="weekEventChoice"/,'une semaine passée doit permettre d’attribuer un événement aux sept jours');
+  assert.match(pastPlanningHtml,/data-action="save-week-context"/,'le planning et l’événement hebdomadaires partagent la même validation');
   const currentPlanningHtml=MH.ui.__weekDialogContent('2026-09-14');
   assert.match(currentPlanningHtml,/Planning prévu/,'la semaine courante doit conserver le planning prévu');
-  assert.match(currentPlanningHtml,/Changer de planning/);
+  assert.match(currentPlanningHtml,/id="weekPlanChoice"/);
+  assert.match(currentPlanningHtml,/Modifier une journée/);
   const consolidatedHtml=MH.ui.__weekDialogContent('2026-08-31');
   assert.match(consolidatedHtml,/Reconstituer les données réelles/);
   assert.match(consolidatedHtml,/Total consolidé actuel/);
   assert.match(consolidatedHtml,/disabled/,'le remplacement doit rester bloqué tant que la ressaisie est incomplète');
+}
+
+{
+  const state=baseState();
+  state.config.futureEvents.push({id:'holiday',type:'Congé',comment:'',start:'2026-09-07',end:'2026-09-13',part:'full',splitTime:'',status:'validated'});
+  const {core:C,domain:D}=app(state);
+  D.setEventRange('2026-09-10','2026-09-10','Récup');
+  assert.deepEqual(Array.from(C.state.config.futureEvents,e=>[e.type,e.start,e.end]),[
+    ['Congé','2026-09-07','2026-09-09'],
+    ['Récup','2026-09-10','2026-09-10'],
+    ['Congé','2026-09-11','2026-09-13']
+  ],'modifier l’événement d’une journée doit préserver les jours voisins de la période');
+  D.setEventRange('2026-09-07','2026-09-13','');
+  assert.equal(C.state.config.futureEvents.length,0,'Aucun doit retirer les événements de toute la période choisie');
 }
 
 {
