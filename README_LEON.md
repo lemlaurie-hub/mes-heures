@@ -278,6 +278,7 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - édition hebdomadaire : la fiche d’une semaine permet à nouveau d’attribuer un planning et un événement. Depuis cette fiche, la portée par défaut est toute la semaine, du lundi au dimanche. La modification d’une journée reste accessible séparément.
 - protection du futur : ouvrir une journée future montre ses données prévues, mais l’enregistrement de la journée type ou de l’événement ne transforme pas ces horaires prévus en travail réel.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.
+- raccord annuel/solde : les semaines passées complètes calculées depuis les journées réelles contribuent désormais au solde actuel, même lorsqu'elles ne proviennent ni d'une consolidation ni d'un remplacement. Une semaine réelle incomplète reste exclue afin de ne pas inventer de dette.
 
 ### Pause et anciennes saisies de S36 — cause identifiée, décision d’attendre
 
@@ -314,6 +315,7 @@ Les tests couvrent actuellement :
 - conservation du contexte semaine lors de l’édition d’une journée et de son événement ;
 - attribution d’un événement à une seule journée avec découpage et conservation d’une période voisine ;
 - présence des commandes de planning et d’événement dans la fiche de semaine ;
+- reprise dans le solde des semaines réelles complètes non consolidées, avec exclusion des semaines incomplètes ;
 - rattachement d’une semaine à son lundi ;
 - cohérence de l’interface et des exports avec le moteur commun.
 
@@ -324,7 +326,7 @@ Vérifier également la syntaxe des scripts et `git diff --check`.
 - dépôt : `lemlaurie-hub/mes-heures` ;
 - base publiée avant cette correction : `main` au commit `b38a0cd8c4a7e53bb257fa609c66b2dd62c10e26` ;
 - éditeurs uniques de journée et de semaine préparés localement après cette base ;
-- cache PWA préparé en version 62 ;
+- cache PWA préparé en version 63 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.
