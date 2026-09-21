@@ -274,6 +274,7 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - notice contextuelle : les grandes cartes comportent un symbole discret `ⓘ` qui ouvre la notice directement sur la rubrique concernée. La rubrique Planning documente le fond gris, les contours vert, orange et rouge, ainsi que le contour en pointillés.
 - anciennes consolidations : ressaisie progressive des journées et remplacement uniquement après validation explicite, avec archivage de l’ancien total.
 - navigation de reconstitution : ajout d’événement depuis la journée et retour automatique à la semaine après enregistrement.
+- éditeur réel : la journée type prévue peut être attribuée directement à la date ; l’ajout d’un événement est indépendant et ne crée pas de journée réelle vide ; une seule plage est affichée au départ et les suivantes sont ajoutées avec `+ Ajouter une plage`.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.
 
 ### Pause et anciennes saisies de S36 — cause identifiée, décision d’attendre

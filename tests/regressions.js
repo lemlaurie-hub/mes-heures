@@ -6,6 +6,11 @@ const vm=require('node:vm');
 const ROOT=path.resolve(__dirname,'..');
 const actualDaySource=fs.readFileSync(path.join(ROOT,'actual-day.js'),'utf8');
 assert.match(actualDaySource,/data-actual-action="event"/,'l’éditeur réel doit proposer l’ajout ou la modification d’un événement');
+assert.doesNotMatch(actualDaySource,/save\(true\)/,'ouvrir un événement ne doit pas enregistrer artificiellement la journée');
+assert.match(actualDaySource,/id="actualDayType"/,'l’éditeur réel doit permettre d’attribuer une journée type à la date');
+assert.match(actualDaySource,/dataset\.followType/,'changer de journée type doit aussi reprendre sa pause prévue tant que la pause n’est pas personnalisée');
+assert.match(actualDaySource,/data-actual-action="add-segment"/,'les plages supplémentaires doivent être ajoutées à la demande');
+assert.doesNotMatch(actualDaySource,/\[0,1,2,3,4\]\.map/,'l’éditeur ne doit plus afficher cinq plages vides immédiatement');
 assert.match(actualDaySource,/MH\.ui\?\.openWeek\?\./,'l’éditeur doit pouvoir revenir à la semaine qui l’a ouvert');
 const RealDate=Date;
 class FixedDate extends RealDate{
@@ -93,6 +98,7 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   const MH=app(state),{core:C,domain:D,actualDay:A}=MH;
   assert.equal(D.actualPause('2026-09-17'),90,'NORJ doit fournir 90 min aux anciennes journées sans marqueur');
   assert.equal(A.editModel('2026-09-17').pause,90,'l’éditeur doit lire la même pause que le moteur');
+  assert.equal(A.editModel('2026-09-17').dayTypeId,'norj','l’éditeur réel doit proposer la journée type applicable');
   assert.equal(D.actualWorked('2026-09-17'),559,'le temps réel doit retirer les 90 min de NORJ');
   assert.equal(C.state.days['2026-09-17'].pauseMinutes,30,'la lecture ne doit pas réécrire silencieusement la donnée ancienne');
   loadConsumers(MH);
