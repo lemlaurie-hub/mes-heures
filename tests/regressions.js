@@ -275,4 +275,27 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.match(junction,/jeudi 10 septembre/,'la saisie reprend au lendemain de la référence');
 }
 
+{
+  const state=baseState();
+  state.days['2026-08-31']=completeDay('09:00','17:30',30);
+  state.days['2026-09-01']=completeDay('09:00','17:30',30);
+  state.days['2026-09-02']=completeDay('09:00','17:30',30);
+  state.days['2026-09-03']=completeDay('09:00','19:36',90);
+  state.days['2026-09-07']=completeDay('09:00','18:30',30);
+  state.days['2026-09-08']=completeDay('09:00','18:30',30);
+  state.days['2026-09-09']=completeDay('09:00','18:30',30);
+  state.days['2026-09-10']=completeDay('09:00','22:47',90);
+  const {domain:D}=app(state);
+  assert.equal(D.weekAccounted('2026-08-31')-D.weeklyObjective('2026-08-31'),-114,'S36 reproduit un écart de -1h54');
+  assert.equal(D.weekAccounted('2026-09-07')-D.weeklyObjective('2026-09-07'),257,'S37 reproduit un écart de +4h17');
+  assert.equal(D.historicalCarryBefore('2026-09-14'),143,'le solde avant la semaine courante doit reprendre les semaines réelles complètes, soit +2h23');
+}
+
+{
+  const state=baseState();
+  state.days['2026-09-07']=completeDay('09:00','18:30',30);
+  const {domain:D}=app(state);
+  assert.equal(D.historicalCarryBefore('2026-09-14'),0,'une semaine réelle incomplète ne doit pas créer un solde artificiel');
+}
+
 console.log('Régressions Mes heures : OK');
