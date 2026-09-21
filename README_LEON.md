@@ -274,7 +274,9 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - notice contextuelle : les grandes cartes comportent un symbole discret `ⓘ` qui ouvre la notice directement sur la rubrique concernée. La rubrique Planning documente le fond gris, les contours vert, orange et rouge, ainsi que le contour en pointillés.
 - anciennes consolidations : ressaisie progressive des journées et remplacement uniquement après validation explicite, avec archivage de l’ancien total.
 - navigation de reconstitution : ajout d’événement depuis la journée et retour automatique à la semaine après enregistrement.
-- éditeur réel : la journée type prévue peut être attribuée directement à la date ; l’ajout d’un événement est indépendant et ne crée pas de journée réelle vide ; une seule plage est affichée au départ et les suivantes sont ajoutées avec `+ Ajouter une plage`.
+- éditeur de journée unique : Historique et Planning ouvrent exactement le même composant. Il permet d’attribuer la journée type et un événement, puis de saisir le réel. L’événement choisi ici ne concerne que cette date ; si elle appartenait à une période plus longue, les jours voisins sont conservés. Une seule plage vide est affichée au départ, toutes les plages déjà enregistrées restent visibles et les suivantes sont ajoutées avec `+ Ajouter une plage`.
+- édition hebdomadaire : la fiche d’une semaine permet à nouveau d’attribuer un planning et un événement. Depuis cette fiche, la portée par défaut est toute la semaine, du lundi au dimanche. La modification d’une journée reste accessible séparément.
+- protection du futur : ouvrir une journée future montre ses données prévues, mais l’enregistrement de la journée type ou de l’événement ne transforme pas ces horaires prévus en travail réel.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.
 
 ### Pause et anciennes saisies de S36 — cause identifiée, décision d’attendre
@@ -310,17 +312,19 @@ Les tests couvrent actuellement :
 - maintien du total consolidé pendant une ressaisie partielle, comparaison avant remplacement et conservation de l’ancien total ;
 - exercice partiellement inconnu couvert par un solde de référence, y compris semaine de raccord et PDF annuel ;
 - conservation du contexte semaine lors de l’édition d’une journée et de son événement ;
+- attribution d’un événement à une seule journée avec découpage et conservation d’une période voisine ;
+- présence des commandes de planning et d’événement dans la fiche de semaine ;
 - rattachement d’une semaine à son lundi ;
 - cohérence de l’interface et des exports avec le moteur commun.
 
 Vérifier également la syntaxe des scripts et `git diff --check`.
 
-## 14. État au 20 septembre 2026
+## 14. État au 21 septembre 2026
 
 - dépôt : `lemlaurie-hub/mes-heures` ;
-- base publiée avant cette correction : `main` au commit `f37a5a5fbaf9eb301d925988c2f66c6bfe352c9d` ;
-- correction de l’état des jours à 0 h et détail dépliable des semaines préparés après cette base ;
-- cache PWA préparé en version 56 ;
+- base publiée avant cette correction : `main` au commit `b38a0cd8c4a7e53bb257fa609c66b2dd62c10e26` ;
+- éditeurs uniques de journée et de semaine préparés localement après cette base ;
+- cache PWA préparé en version 62 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.
