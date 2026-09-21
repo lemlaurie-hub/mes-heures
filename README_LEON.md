@@ -277,6 +277,9 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - éditeur de journée unique : Historique et Planning ouvrent exactement le même composant. Il permet d’attribuer la journée type et un événement, puis de saisir le réel. L’événement choisi ici ne concerne que cette date ; si elle appartenait à une période plus longue, les jours voisins sont conservés. Une seule plage vide est affichée au départ, toutes les plages déjà enregistrées restent visibles et les suivantes sont ajoutées avec `+ Ajouter une plage`.
 - édition hebdomadaire : la fiche d’une semaine permet à nouveau d’attribuer un planning et un événement. Depuis cette fiche, la portée par défaut est toute la semaine, du lundi au dimanche. La modification d’une journée reste accessible séparément.
 - protection du futur : ouvrir une journée future montre ses données prévues, mais l’enregistrement de la journée type ou de l’événement ne transforme pas ces horaires prévus en travail réel.
+- changement de planning hebdomadaire : les anciennes attributions journalières qui répétaient le planning précédent sont retirées, y compris sur les semaines secondaires déjà configurées. Les exceptions journalières explicites, le réel, les remarques et les événements sont conservés.
+- événement hebdomadaire : le sélecteur de semaine représente uniquement un événement couvrant les sept jours. Les événements ponctuels restent visibles dans le détail de chaque journée et ne sont pas modifiés par un simple changement de planning.
+- détail de projection : toutes les semaines sont affichées, y compris celles à `0h00` d’écart, afin que l’utilisatrice puisse vérifier qu’elles ont réellement atteint ou neutralisé leur objectif.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.
 - raccord annuel/solde : les semaines passées complètes calculées depuis les journées réelles contribuent désormais au solde actuel, même lorsqu'elles ne proviennent ni d'une consolidation ni d'un remplacement. Une semaine réelle incomplète reste exclue afin de ne pas inventer de dette.
 
@@ -316,6 +319,9 @@ Les tests couvrent actuellement :
 - attribution d’un événement à une seule journée avec découpage et conservation d’une période voisine ;
 - présence des commandes de planning et d’événement dans la fiche de semaine ;
 - reprise dans le solde des semaines réelles complètes non consolidées, avec exclusion des semaines incomplètes ;
+- réparation des journées MJC héritées qui masquaient les journées ACM d’un planning DIR ;
+- séparation entre événement hebdomadaire et événements journaliers ;
+- affichage des semaines sans écart dans le détail annuel ;
 - rattachement d’une semaine à son lundi ;
 - cohérence de l’interface et des exports avec le moteur commun.
 
@@ -326,7 +332,7 @@ Vérifier également la syntaxe des scripts et `git diff --check`.
 - dépôt : `lemlaurie-hub/mes-heures` ;
 - base publiée avant cette correction : `main` au commit `b38a0cd8c4a7e53bb257fa609c66b2dd62c10e26` ;
 - éditeurs uniques de journée et de semaine préparés localement après cette base ;
-- cache PWA préparé en version 63 ;
+- cache PWA préparé en version 64 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.
