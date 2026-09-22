@@ -348,4 +348,41 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.equal(whole?.type,'Congé');
 }
 
+{
+  const state=baseState();
+  state.config.dayTypes.push({id:'long',code:'LONG',name:'Semaine exceptionnelle',start:'08:00',end:'18:30',pause:30,minutes:600});
+  state.config.planningProfiles.push({id:'exceptional',code:'EXC',name:'Exceptionnel 50 h',role:'secondary',versions:[],archived:false,days:{1:'long',2:'long',3:'long',4:'long',5:'long',6:'repos',0:'repos'}});
+  state.config.planningPeriods.push({id:'exceptional-week',profileId:'exceptional',start:'2026-09-07',end:'2026-09-13',status:'validated'});
+  state.config.futureEvents.push({id:'leave-week',type:'Congé',comment:'',start:'2026-09-07',end:'2026-09-13',part:'full',splitTime:'',status:'validated'});
+  const {domain:D}=app(state);
+  assert.equal(D.weekFullyOnLeave('2026-09-07'),true);
+  assert.equal(D.weekForecast('2026-09-07'),2100,'une semaine complète de congé doit valoir l’objectif contractuel, pas le planning exceptionnel de 50 h');
+  assert.equal(D.weekAccounted('2026-09-07'),2100,'le réel retenu d’une semaine neutralisée doit être exactement 35 h');
+  assert.equal(D.weekInfo('2026-09-07').minutes,2100,'la carte Planning doit afficher les mêmes 35 h');
+}
+
+{
+  const state=baseState();
+  state.config.dayTypes.push({id:'long',code:'LONG',name:'Semaine exceptionnelle',start:'08:00',end:'18:30',pause:30,minutes:600});
+  state.config.planningProfiles.push({id:'exceptional',code:'EXC',name:'Exceptionnel 50 h',role:'secondary',versions:[],archived:false,days:{1:'long',2:'long',3:'long',4:'long',5:'long',6:'repos',0:'repos'}});
+  state.config.planningPeriods.push({id:'exceptional-week',profileId:'exceptional',start:'2026-09-07',end:'2026-09-13',status:'validated'});
+  state.config.futureEvents.push({id:'leave-four-days',type:'Congé',comment:'',start:'2026-09-07',end:'2026-09-10',part:'full',splitTime:'',status:'validated'});
+  state.days['2026-09-11']=completeDay('08:00','18:30',30);
+  const {domain:D}=app(state);
+  assert.equal(D.weekFullyOnLeave('2026-09-07'),false,'une semaine mixte ne doit pas être confondue avec une semaine entièrement en congé');
+  assert.equal(D.weekAccounted('2026-09-07'),3000,'une semaine mixte conserve le calcul de ses journées réelles et neutralisées');
+}
+
+{
+  const state=baseState();
+  state.config.dayTypes.push({id:'long',code:'LONG',name:'Semaine exceptionnelle',start:'08:00',end:'18:30',pause:30,minutes:600});
+  state.config.planningProfiles.push({id:'exceptional',code:'EXC',name:'Exceptionnel 50 h',role:'secondary',versions:[],archived:false,days:{1:'long',2:'long',3:'long',4:'long',5:'long',6:'repos',0:'repos'}});
+  state.config.planningPeriods.push({id:'exceptional-week',profileId:'exceptional',start:'2026-09-07',end:'2026-09-13',status:'validated'});
+  state.config.futureEvents.push({id:'sick-week',type:'Arrêt maladie',comment:'',start:'2026-09-07',end:'2026-09-13',part:'full',splitTime:'',status:'validated'});
+  const {domain:D}=app(state);
+  assert.equal(D.weekFullyOnLeave('2026-09-07'),false,'un arrêt ne doit pas être traité comme un congé planifié');
+  assert.equal(D.weekForecast('2026-09-07'),3000,'un arrêt doit rester transparent par rapport au planning exceptionnel prévu');
+  assert.equal(D.weekAccounted('2026-09-07'),3000,'un arrêt doit retenir les heures qui étaient prévues');
+}
+
 console.log('Régressions Mes heures : OK');
