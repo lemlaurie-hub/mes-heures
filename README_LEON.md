@@ -209,6 +209,8 @@ Destiné aux exports, imports, sauvegardes et futurs documents administratifs. U
 - Une période multi-jours doit être saisissable en une fois.
 - Aucun motif personnel inutile ne doit être demandé pour un arrêt maladie.
 - Certains événements neutralisent l’écart par rapport à l’objectif au lieu de représenter du travail pointé.
+- Si toutes les journées normalement travaillées d’une semaine sont couvertes en totalité par l’événement `Congé`, le total retenu est exactement l’objectif contractuel hebdomadaire. Une semaine de congé à 35 h vaut donc 35h00, même si un planning exceptionnel prévoyait davantage ou moins. Les journées continuent d’afficher leur durée prévue et une semaine mixte reste calculée journée par journée.
+- Cette normalisation hebdomadaire ne concerne ni les arrêts maladie ni les jours fériés. Ils restent transparents par rapport au planning applicable : la durée prévue de la journée est retenue. Un férié sur une journée prévue à 7 h vaut 7 h ; un arrêt pendant un planning exceptionnel conserve ce planning.
 - Les jours fériés sont déterminés automatiquement ; un jour férié travaillé reste un cas distinct.
 
 ## 10. Formats
