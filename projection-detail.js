@@ -21,6 +21,9 @@ window.MH = window.MH || {};
   function rowsFor(y){
     const current=C.weekStart(C.dateKey());
     return C.mondays(y).map(ws=>{
+      const coverage=D.referenceCoverage(ws);
+      if(coverage==='covered')return{ws,projected:null,objective:null,delta:null,phase:'incluse dans le solde de référence',reference:true};
+      if(coverage==='junction')return{ws,projected:null,objective:null,delta:null,phase:'semaine de raccord',reference:true};
       const projected=contribution(ws), objective=D.weeklyObjective(ws);
       return {ws,projected,objective,delta:projected-objective,phase:ws<current?'passée':ws===current?'en cours':'à venir'};
     });
@@ -33,7 +36,7 @@ window.MH = window.MH || {};
     if(!summary||!yearInput)return;
     view.querySelector('#projectionDetail')?.remove();
     const y=Number(yearInput.value),currentYear=Number(C.dateKey().slice(0,4)),opening=D.openingAtYear(y);
-    const closing=opening==null?null:opening+D.annualProjection(y)-D.annualObjective(y);
+    const closing=D.projectedClosingAtYear(y);
     const current=y===currentYear?D.currentBalance(C.dateKey()):null;
     const evolution=current==null||closing==null?null:closing-current;
     const rows=rowsFor(y);
@@ -43,7 +46,7 @@ window.MH = window.MH || {};
     const explained=y===currentYear?futureDelta+currentRemaining:null;
     const residual=evolution==null||explained==null?null:evolution-explained;
     const box=document.createElement('div');box.id='projectionDetail';box.className='projection-detail';
-    box.innerHTML=`<button type="button" class="ghost" id="projectionDetailToggle">${open?'Masquer le détail':'Voir le détail de la projection'}</button>${open?`<div class="history-item"><div class="row"><strong>Évolution prévue jusqu’au 31/12</strong><strong class="${(evolution??0)>=0?'positive':'negative'}">${evolution==null?'—':C.fmtMinutes(evolution)}</strong></div>${y===currentYear?'<p class="muted compact">Différence entre le solde actuel et le report projeté de fin d’année.</p>':''}<p class="muted compact">Toutes les semaines sont affichées, y compris celles qui atteignent exactement leur objectif.</p><div style="margin-top:10px">${rows.map(r=>`<div class="row"><span>S${String(C.weekNumber(r.ws)).padStart(2,'0')} · ${r.phase}</span><span>${C.fmtPlainMinutes(r.projected)} / ${C.fmtPlainMinutes(r.objective)} → <strong class="${r.delta===0?'muted':r.delta>0?'positive':'negative'}">${C.fmtMinutes(r.delta)}</strong></span></div>`).join('')}</div>${residual!==null&&residual!==0?`<div class="alertline">⚠️ ${C.fmtMinutes(residual)} ne vient pas des semaines restantes : c’est un écart de raccord entre le calcul annuel et le solde actuel. Il faut alors vérifier le moteur plutôt qu’un planning.</div>`:''}</div>`:''}`;
+    box.innerHTML=`<button type="button" class="ghost" id="projectionDetailToggle">${open?'Masquer le détail':'Voir le détail de la projection'}</button>${open?`<div class="history-item"><div class="row"><strong>Évolution prévue jusqu’au 31/12</strong><strong class="${(evolution??0)>=0?'positive':'negative'}">${evolution==null?'—':C.fmtMinutes(evolution)}</strong></div>${y===currentYear?'<p class="muted compact">Différence entre le solde actuel et le report projeté de fin d’année.</p>':''}<p class="muted compact">Toutes les semaines sont affichées. Celles déjà couvertes par un solde de référence sont identifiées sans leur attribuer un faux déficit.</p><div style="margin-top:10px">${rows.map(r=>`<div class="row"><span>S${String(C.weekNumber(r.ws)).padStart(2,'0')} · ${r.phase}</span>${r.reference?'<span class="muted">déjà prise en compte</span>':`<span>${C.fmtPlainMinutes(r.projected)} / ${C.fmtPlainMinutes(r.objective)} → <strong class="${r.delta===0?'muted':r.delta>0?'positive':'negative'}">${C.fmtMinutes(r.delta)}</strong></span>`}</div>`).join('')}</div>${residual!==null&&residual!==0?`<div class="alertline">⚠️ ${C.fmtMinutes(residual)} ne vient pas des semaines restantes : c’est un écart de raccord entre le calcul annuel et le solde actuel. Il faut alors vérifier le moteur plutôt qu’un planning.</div>`:''}</div>`:''}`;
     summary.insertAdjacentElement('afterend',box);
     box.querySelector('#projectionDetailToggle')?.addEventListener('click',()=>{open=!open;inject()});
   }
