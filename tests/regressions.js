@@ -16,6 +16,8 @@ assert.doesNotMatch(actualDaySource,/\[0,1,2,3,4\]\.map/,'l’éditeur ne doit p
 assert.match(actualDaySource,/MH\.ui\?\.openWeek\?\./,'l’éditeur doit pouvoir revenir à la semaine qui l’a ouvert');
 assert.match(projectionSource,/rows\.map/,'le détail de projection doit afficher toutes les semaines');
 assert.doesNotMatch(projectionSource,/nonZero\.map/,'les semaines sans écart ne doivent plus disparaître du détail');
+assert.match(projectionSource,/referenceCoverage/,'le détail de projection doit respecter le solde de référence');
+assert.match(projectionSource,/déjà prise en compte/,'les semaines couvertes doivent être identifiées sans faux déficit');
 const RealDate=Date;
 class FixedDate extends RealDate{
   constructor(...args){super(...(args.length?args:['2026-09-19T12:00:00Z']))}
@@ -251,6 +253,9 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   state.balanceReferenceDate='2026-05-30';
   state.balanceReferenceMinutes=0;
   const {domain:D}=app(state),rows=D.historyWeekRows();
+  assert.equal(D.referenceCoverage('2026-05-18'),'covered');
+  assert.equal(D.referenceCoverage('2026-05-25'),'junction');
+  assert.equal(D.referenceCoverage('2026-06-01'),'after');
   assert.equal(rows[0].weekStart,'2026-06-01','les semaines détaillées doivent commencer au premier lundi suivant la référence');
   assert.equal(rows[0].status,'À compléter','une semaine sans réel après la référence doit être signalée');
   assert.equal(D.weekActualState('2026-06-01').code,'incomplete','le Planning doit encadrer en rouge une semaine manquante après la référence');
@@ -270,11 +275,12 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.equal(D.projectedClosingAtYear(2026),120,'la projection de clôture doit partir du solde de référence');
   loadConsumers(MH);
   const before=MH.ui.__referenceWeekContent('2026-08-31',D.reference());
-  assert.match(before,/Aucun détail hebdomadaire antérieur n’est exigé/);
-  assert.doesNotMatch(before,/À compléter/,'une semaine couverte par la référence ne doit pas créer de dette fictive');
+  assert.match(before,/Non renseignée/,'une journée vide couverte par la référence reste facultative');
+  assert.doesNotMatch(before,/needs-completion/,'une journée couverte ne doit pas recevoir une alerte rouge');
+  assert.match(before,/data-action="edit-actual"/,'une semaine couverte doit rester ressaisissable sans agir sur le compteur');
   const junction=MH.ui.__referenceWeekContent('2026-09-07',{date:'2026-09-09',minutes:120});
   assert.match(junction,/Semaine de raccord/);
-  assert.doesNotMatch(junction,/lundi 7 septembre|mardi 8 septembre|mercredi 9 septembre/,'les jours inclus dans la référence ne doivent pas être réclamés');
+  assert.match(junction,/lundi 7 septembre/,'les jours inclus dans la référence doivent pouvoir être ressaisis à titre préparatoire');
   assert.match(junction,/jeudi 10 septembre/,'la saisie reprend au lendemain de la référence');
 }
 
