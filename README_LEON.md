@@ -196,7 +196,8 @@ Le point de référence (`balanceReferenceDate` et `balanceReferenceMinutes`) co
 - Si la référence se trouve dans l’année consultée, les indicateurs « objectif annuel », « réalisé annuel » et « résultat annuel » ne doivent pas être affichés comme s’ils étaient connus.
 - À leur place, afficher le solde de référence, le solde actuel, l’évolution acquise depuis la référence, le solde projeté au 31/12 et le report N+1 projeté.
 - Le PDF annuel commence à la semaine de raccord. Sur cette première semaine partielle, ne pas afficher un objectif ou un écart hebdomadaire complet qui serait trompeur.
-- Les données antérieures éventuellement ressaisies restent informatives tant que la date de référence n’est pas déplacée volontairement.
+- Les données antérieures éventuellement ressaisies restent informatives tant que la date de référence n’est pas déplacée volontairement. Elles doivent rester accessibles et modifiables depuis les semaines couvertes : la référence les exclut du compteur, elle ne verrouille pas leur saisie.
+- Dans le détail de l’évolution, les semaines entièrement couvertes sont affichées comme « incluses dans le solde de référence », sans objectif ni faux déficit. La semaine qui contient la date de référence est une semaine de raccord et ne reçoit pas non plus un écart hebdomadaire complet trompeur.
 
 ### Docs admin
 
