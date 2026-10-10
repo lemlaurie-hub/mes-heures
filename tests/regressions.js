@@ -64,7 +64,7 @@ function app(state){
 function loadConsumers(MH){
   const context=MH.__testContext;
   const uiSource=fs.readFileSync(path.join(ROOT,'ui.js'),'utf8')
-    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__weekHistoryItem:weekHistoryItem,__weekDialogContent:weekDialogContent,__referenceWeekContent:referenceWeekContent,__historyWeeks:historyWeeks,__historyYears:historyYears,__infoButton:infoButton,toast,');
+    .replace('MH.ui={toast,','MH.ui={__dayHistoryItem:dayHistoryItem,__weekHistoryItem:weekHistoryItem,__weekDialogContent:weekDialogContent,__referenceWeekContent:referenceWeekContent,__historyWeeks:historyWeeks,__historyYears:historyYears,__infoButton:infoButton,__planCard:planCard,toast,');
   vm.runInContext(uiSource,context,{filename:'ui.js'});
   const exportSource=fs.readFileSync(path.join(ROOT,'v17.js'),'utf8')
     .replace('MH.exports={exportCsv,','MH.exports={__dayRow:dayRow,__weekSummary:weekSummary,exportCsv,');
@@ -81,6 +81,48 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
   assert.equal(D.weekForecast('2026-09-14'),0,'le planning initial doit être vierge du lundi au dimanche');
   assert.equal(D.principalPlan().code,'BASE');
 }
+
+{
+  const state=baseState();
+  state.config.dayTypes=state.config.dayTypes.filter(t=>t.id!=='repos');
+  state.days['2026-09-18']=completeDay('09:00','12:00',0);
+  const MH=app(state),{core:C,domain:D}=MH;
+  const off=D.typeBy(C.SYSTEM_OFF_ID);
+  assert.equal(off?.code,'OFF','la journée système non travaillée doit être recréée si elle a disparu');
+  assert.equal(off?.minutes,0);
+  assert.equal(D.plannedType('2026-09-18')?.id,C.SYSTEM_OFF_ID,'les anciennes références repos doivent retrouver la journée système');
+  assert.equal(D.actualWorked('2026-09-18'),180,'réparer rétroactivement le prévu ne doit jamais remplacer le réel saisi');
+  assert.equal(D.accountedMinutes('2026-09-18'),180,'le réel d’un jour désormais non travaillé doit rester comptabilisé');
+  assert.throws(()=>D.saveDayType({code:'TEST',name:'Test',start:'',end:'',pause:0},C.SYSTEM_OFF_ID),/journée système/);
+  assert.throws(()=>D.deleteDayType(C.SYSTEM_OFF_ID),/ne peut pas être supprimée/);
+  loadConsumers(MH);
+  const html=MH.ui.__planCard(D.principalPlan());
+  assert.match(html,/OFF · Non travaillée/,'le planning doit afficher la vraie journée à 0 h et non NORM par défaut');
+}
+
+{
+  const state=baseState();
+  state.config.dayTypes=state.config.dayTypes.filter(t=>t.id!=='repos');
+  state.config.dayTypes.push({id:'off-cree-sur-telephone',code:'OFF',name:'Repos',start:'',end:'',pause:0,minutes:0});
+  state.config.planningProfiles[0].days[5]='off-cree-sur-telephone';
+  state.config.planningProfiles[0].days[6]='off-cree-sur-telephone';
+  state.config.planningProfiles[0].days[0]='off-cree-sur-telephone';
+  const {core:C,domain:D}=app(state),offTypes=C.state.config.dayTypes.filter(t=>t.code==='OFF');
+  assert.equal(offTypes.length,1,'une installation qui possède déjà OFF ne doit pas recevoir un doublon');
+  assert.equal(offTypes[0].id,C.SYSTEM_OFF_ID,'la journée OFF existante devient la journée système stable');
+  assert.equal(D.plannedType('2026-09-18')?.id,C.SYSTEM_OFF_ID,'les plannings doivent rester reliés à leur journée OFF existante');
+}
+
+{
+  const state=baseState();
+  state.config.planningProfiles[0].days[5]='type-supprime';
+  const MH=app(state);loadConsumers(MH);
+  const html=MH.ui.__planCard(MH.domain.principalPlan());
+  assert.match(html,/⚠ Journée type introuvable/,'une référence invalide ne doit plus se déguiser en première option du menu');
+  assert.throws(()=>MH.domain.savePlanningVersion('mjc',{name:'Planning MJC',code:'MJC',effectiveFrom:'2026-09-19',status:'validated',days:MH.domain.planDays(MH.domain.principalPlan(),'2026-09-19')}),/introuvable/);
+}
+
+assert.match(fs.readFileSync(path.join(ROOT,'ui.js'),'utf8'),/frenchDate\(e\.start,\{day:'2-digit',month:'2-digit',year:'numeric'\}\)/,'les dates des événements doivent être affichées au format français');
 
 {
   const oldStarter={config:{weeklyTarget:35,pause:30,personName:'',employmentName:'Mon emploi',employmentStart:'2026-09-21',scheduleVersions:[{effectiveFrom:'2026-09-21',weeklyTarget:35}],dayTypes:[{id:'normal',code:'NORM',name:'Normal',start:'09:00',end:'18:30',pause:30,minutes:540},{id:'normal-jeudi',code:'NORJ',name:'Normal jeudi',start:'09:00',end:'18:30',pause:90,minutes:480},{id:'repos',code:'OFF',name:'Repos',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},planningProfiles:[{id:'normal',code:'MJC',name:'Planning principal',role:'principal',days:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},versions:[],archived:false}],planningPeriods:[],futureEvents:[],dayOverridesV32:{}},days:{'2026-09-21':{segments:[],note:'',status:'open',source:'live'}},historicalWeeks:[],balanceAdjustments:[]};

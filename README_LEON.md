@@ -82,6 +82,16 @@ Ordre des règles :
 
 **Journées types → Plannings → périodes particulières → journées réelles.**
 
+La journée `OFF · Non travaillée` est une journée système à 0 h. Elle existe
+toujours, ne peut être ni modifiée ni supprimée et doit être attribuée
+explicitement aux jours non travaillés de chaque planning. L’application ne
+déduit jamais qu’un vendredi ou un week-end vaut 0 h d’après son nom. Une
+ancienne référence `repos` manquante est réparée vers cette journée système ;
+cette migration modifie uniquement le prévu et ne touche jamais aux plages ou
+durées réellement saisies. Toute autre référence de journée type introuvable
+doit être signalée explicitement, sans afficher trompeusement la première
+option de la liste.
+
 Le planning principal s’applique par défaut. Il n’a pas besoin d’une période d’application. Les plannings secondaires ou exceptionnels remplacent le principal pendant leurs périodes définies. Les plannings peuvent avoir des versions avec date d’effet.
 
 Exemples importants de la configuration MJC :
@@ -313,6 +323,8 @@ Les tests couvrent actuellement :
 - semaine passée incomplète ;
 - jour prévu à 0 h mais réellement travaillé ;
 - jour prévu à 0 h sans pointage automatiquement validé ;
+- restauration de la journée système `OFF` sans modification du réel déjà saisi ;
+- signalement explicite d’une référence de journée type introuvable ;
 - détail hebdomadaire dépliable avec accès à la modification des journées ;
 - bascule réel/prévu lors de l’ouverture d’une semaine depuis le calendrier annuel ;
 - absence de faux détail pour une semaine seulement consolidée ;
@@ -330,12 +342,12 @@ Les tests couvrent actuellement :
 
 Vérifier également la syntaxe des scripts et `git diff --check`.
 
-## 14. État au 21 septembre 2026
+## 14. État au 10 octobre 2026
 
 - dépôt : `lemlaurie-hub/mes-heures` ;
-- base publiée avant cette correction : `main` au commit `b38a0cd8c4a7e53bb257fa609c66b2dd62c10e26` ;
-- éditeurs uniques de journée et de semaine préparés localement après cette base ;
-- cache PWA préparé en version 64 ;
+- base publiée avant cette correction : `main` au commit `d554c6dd02da96b0197cdbb2538733291e0cac28` ;
+- journée système `OFF · Non travaillée`, réparation des anciennes références `repos` et dates françaises des événements préparées localement après cette base ;
+- cache PWA préparé en version 67 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.

@@ -3,6 +3,7 @@ window.MH = window.MH || {};
 (function(MH){
   'use strict';
   const KEY='mes-heures-data-v8';
+  const SYSTEM_OFF_ID='repos';
   const OLD_KEYS=['mes-heures-data-v7','mes-heures-data-v6','mes-heures-data-v5','mes-heures-data-v4','mes-heures-data-v3','mes-heures-data-v2','mes-heures-data-v1'];
   const DAY=86400000;
   const DEFAULT_SCHEDULE={1:{start:'',end:'',minutes:0},2:{start:'',end:'',minutes:0},3:{start:'',end:'',minutes:0},4:{start:'',end:'',minutes:0},5:{start:'',end:'',minutes:0},6:{start:'',end:'',minutes:0},0:{start:'',end:'',minutes:0}};
@@ -41,7 +42,8 @@ window.MH = window.MH || {};
   }
   function ensureSegments(day){if(Array.isArray(day.segments))return day.segments;day.segments=[];if(day.arrival)day.segments.push({start:day.arrival,end:day.departure||null,label:''});delete day.arrival;delete day.departure;delete day.workedMinutes;return day.segments}
   function segmentText(day){const ss=validSegments(day);return ss.length?ss.map(s=>{const a=mins(s.start),b=mins(s.end);return `${s.start}–${s.end||'…'}${a!=null&&b!=null&&b<a?' (+1 j)':''}`}).join(' · '):'—'}
-  function defaultConfig(){const today=dateKey();return{weeklyTarget:0,pause:0,personName:'',employmentName:'Mon emploi',employmentStart:today,contractEnd:'',calendarUrl:'',balanceAlertNegative:20,balanceAlertPositive:20,balanceReturnDelayValue:'',balanceReturnDelayUnit:'weeks',alsaceMoselle:false,scheduleVersions:[{effectiveFrom:today,weeklyTarget:0,schedule:clone(DEFAULT_SCHEDULE)}],dayTypes:[{id:'repos',code:'OFF',name:'Repos',description:'',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'repos',2:'repos',3:'repos',4:'repos',5:'repos',6:'repos',0:'repos'},planningProfiles:[],planningPeriods:[],futureEvents:[],dayOverridesV32:{},annualViewYear:new Date().getFullYear()}}
+  function systemOffType(){return{id:SYSTEM_OFF_ID,code:'OFF',name:'Non travaillée',description:'Journée système à 0 h',start:'',end:'',pause:0,minutes:0,systemRole:'off'}}
+  function defaultConfig(){const today=dateKey();return{weeklyTarget:0,pause:0,personName:'',employmentName:'Mon emploi',employmentStart:today,contractEnd:'',calendarUrl:'',balanceAlertNegative:20,balanceAlertPositive:20,balanceReturnDelayValue:'',balanceReturnDelayUnit:'weeks',alsaceMoselle:false,scheduleVersions:[{effectiveFrom:today,weeklyTarget:0,schedule:clone(DEFAULT_SCHEDULE)}],dayTypes:[systemOffType()],weekPlan:{1:SYSTEM_OFF_ID,2:SYSTEM_OFF_ID,3:SYSTEM_OFF_ID,4:SYSTEM_OFF_ID,5:SYSTEM_OFF_ID,6:SYSTEM_OFF_ID,0:SYSTEM_OFF_ID},planningProfiles:[],planningPeriods:[],futureEvents:[],dayOverridesV32:{},annualViewYear:new Date().getFullYear()}}
   /** Reconnaît uniquement l’ancien modèle personnel encore vierge de toute vraie saisie. */
   function isUnusedLegacyStarter(s,c){
     const types=c.dayTypes||[],plan=(c.planningProfiles||[])[0],days=plan?.days||{};
@@ -55,12 +57,24 @@ window.MH = window.MH || {};
     for(const [k,v] of Object.entries(d))if(c[k]==null)c[k]=clone(v);
     s.days=s.days&&typeof s.days==='object'?s.days:{};s.historicalWeeks=Array.isArray(s.historicalWeeks)?s.historicalWeeks:[];s.balanceAdjustments=Array.isArray(s.balanceAdjustments)?s.balanceAdjustments:[];s.initialBalanceMinutes=Number(s.initialBalanceMinutes||0);
     c.dayTypes=Array.isArray(c.dayTypes)&&c.dayTypes.length?c.dayTypes:d.dayTypes;
+    /* OFF est une donnée système, pas une journée personnalisable. La recréer
+       répare les anciens plannings qui pointent encore vers `repos`, sans
+       modifier aucune journée réellement saisie. */
+    let systemOff=c.dayTypes.find(t=>t.id===SYSTEM_OFF_ID)||c.dayTypes.find(t=>t.systemRole==='off')||c.dayTypes.find(t=>String(t.code||'').toUpperCase()==='OFF'&&!t.start&&!t.end&&Number(t.minutes||0)===0);
+    if(!systemOff){systemOff=systemOffType();c.dayTypes.push(systemOff)}
+    const previousOffId=systemOff.id;
+    Object.assign(systemOff,systemOffType());
     for(const t of c.dayTypes){t.id=t.id||uid('type');t.code=String(t.code||t.name||'JOUR').toUpperCase().replace(/\s+/g,'').slice(0,4);t.name=t.name||'Journée';t.description=t.description||'';t.start=t.start||'';t.end=t.end||'';t.pause=Math.max(0,Number(t.pause)||0);if(!Number.isFinite(Number(t.minutes))){const a=mins(t.start),b=mins(t.end);t.minutes=a!=null&&b!=null&&b>=a?Math.max(0,b-a-t.pause):0}else t.minutes=Math.max(0,Number(t.minutes)||0)}
     c.weekPlan=c.weekPlan||d.weekPlan;c.planningProfiles=Array.isArray(c.planningProfiles)?c.planningProfiles:[];
     if(!c.planningProfiles.length)c.planningProfiles=[{id:'principal',code:'BASE',name:'Planning principal',role:'principal',days:clone(c.weekPlan),versions:[],archived:false}];
     for(let i=0;i<c.planningProfiles.length;i++){const p=c.planningProfiles[i];p.id=p.id||uid('plan');p.code=p.code||`P${i+1}`;p.name=p.name||'Planning';p.role=p.role||(p.id==='normal'||i===0?'principal':i===1?'secondary':i===2?'exceptional':'extra');p.days=p.days||clone(c.weekPlan);p.versions=Array.isArray(p.versions)?p.versions:[];p.archived=!!p.archived}
     const principal=c.planningProfiles.find(p=>p.role==='principal')||c.planningProfiles[0];if(principal)principal.role='principal';
     c.planningPeriods=Array.isArray(c.planningPeriods)?c.planningPeriods:[];c.futureEvents=Array.isArray(c.futureEvents)?c.futureEvents:[];c.dayOverridesV32=c.dayOverridesV32&&typeof c.dayOverridesV32==='object'?c.dayOverridesV32:{};
+    if(previousOffId!==SYSTEM_OFF_ID){
+      const repair=days=>{for(const d of Object.keys(days||{}))if(days[d]===previousOffId||days[d]===SYSTEM_OFF_ID)days[d]=SYSTEM_OFF_ID};
+      repair(c.weekPlan);for(const p of c.planningProfiles){repair(p.days);for(const v of p.versions||[])repair(v.days)}
+      for(const o of Object.values(c.dayOverridesV32))if(o?.dayTypeId===previousOffId||o?.dayTypeId===SYSTEM_OFF_ID)o.dayTypeId=SYSTEM_OFF_ID;
+    }
     c.scheduleVersions=Array.isArray(c.scheduleVersions)&&c.scheduleVersions.length?c.scheduleVersions:d.scheduleVersions;c.annualViewYear=Number(c.annualViewYear)||new Date().getFullYear();
     if(isUnusedLegacyStarter(s,c)){
       c.weeklyTarget=d.weeklyTarget;c.pause=d.pause;c.scheduleVersions=clone(d.scheduleVersions);c.dayTypes=clone(d.dayTypes);c.weekPlan=clone(d.weekPlan);c.planningProfiles=[{id:'principal',code:'BASE',name:'Planning principal',role:'principal',days:clone(d.weekPlan),versions:[],archived:false}];c.planningPeriods=[];c.dayOverridesV32={};
@@ -85,5 +99,5 @@ window.MH = window.MH || {};
   function save(){localStorage.setItem(KEY,JSON.stringify(state))}
   function replaceState(next){state=migrate(next);save();return state}
   function dayObj(k=dateKey()){return state.days[k]||(state.days[k]={segments:[],pauseMinutes:Number(state.config.pause||0),note:'',status:'open',source:'live'})}
-  MH.core={KEY,DAY,DEFAULT_SCHEDULE,clone,uid,localKey,dateKey,hhmm,mins,clock,fmtMinutes,fmtPlainMinutes,escapeHtml,escapeAttr,addDays,frenchDate,shortDate,weekStart,weekDays,firstMonday,mondays,weekNumber,rangeDates,monthBounds,validSegments,openSegment,pauseFor,worked,ensureSegments,segmentText,dayObj,save,replaceState,get state(){return state}};
+  MH.core={KEY,SYSTEM_OFF_ID,DAY,DEFAULT_SCHEDULE,clone,uid,localKey,dateKey,hhmm,mins,clock,fmtMinutes,fmtPlainMinutes,escapeHtml,escapeAttr,addDays,frenchDate,shortDate,weekStart,weekDays,firstMonday,mondays,weekNumber,rangeDates,monthBounds,validSegments,openSegment,pauseFor,worked,ensureSegments,segmentText,dayObj,save,replaceState,get state(){return state}};
 })(window.MH);
