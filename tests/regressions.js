@@ -125,6 +125,32 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
 assert.match(fs.readFileSync(path.join(ROOT,'ui.js'),'utf8'),/frenchDate\(e\.start,\{day:'2-digit',month:'2-digit',year:'numeric'\}\)/,'les dates des événements doivent être affichées au format français');
 
 {
+  const state=baseState(),plan=state.config.planningProfiles[0];
+  const allWorked={1:'normal',2:'normal',3:'normal',4:'norj',5:'normal',6:'normal',0:'normal'};
+  const corrected={1:'normal',2:'normal',3:'normal',4:'norj',5:'repos',6:'repos',0:'repos'};
+  plan.versions.push({id:'later',effectiveFrom:'2026-10-10',status:'validated',days:allWorked});
+  let MH=app(state),D=MH.domain;
+  assert.equal(D.planningVersionsAfter('mjc','2026-09-01').length,1);
+  D.savePlanningVersion('mjc',{name:'Planning MJC',code:'MJC',effectiveFrom:'2026-09-01',status:'validated',days:corrected,propagateLater:false});
+  assert.equal(D.planDays(D.planBy('mjc'),'2026-09-15')['6'],'repos','la correction rétroactive doit s’appliquer avant la version suivante');
+  assert.equal(D.planDays(D.planBy('mjc'),'2026-10-10')['6'],'normal','une correction limitée doit préserver la version postérieure');
+  loadConsumers(MH);
+  assert.match(MH.ui.__planCard(D.planBy('mjc')),/Versions enregistrées/);
+  assert.match(MH.ui.__planCard(D.planBy('mjc')),/01\/09\/2026/);
+
+  MH=app(state);D=MH.domain;
+  MH.core.state.days['2026-10-10']=completeDay('09:00','12:00',0);
+  D.savePlanningVersion('mjc',{name:'Planning MJC',code:'MJC',effectiveFrom:'2026-09-01',status:'validated',days:corrected,propagateLater:true});
+  assert.equal(D.planDays(D.planBy('mjc'),'2026-10-10')['6'],'repos','la correction durable doit atteindre les versions suivantes');
+  assert.equal(D.actualWorked('2026-10-10'),180,'propager un planning rétroactif ne doit pas modifier le réel déjà saisi');
+  const before=D.planBy('mjc').versions.length;
+  D.savePlanningVersion('mjc',{name:'Planning MJC',code:'MJC',effectiveFrom:'2026-09-01',status:'validated',days:corrected});
+  assert.equal(D.planBy('mjc').versions.length,before,'corriger la même date doit remplacer sa version sans créer de doublon');
+}
+
+assert.match(fs.readFileSync(path.join(ROOT,'ui.js'),'utf8'),/appliquer aussi cette correction aux versions suivantes/,'une correction rétroactive doit proposer explicitement sa portée');
+
+{
   const oldStarter={config:{weeklyTarget:35,pause:30,personName:'',employmentName:'Mon emploi',employmentStart:'2026-09-21',scheduleVersions:[{effectiveFrom:'2026-09-21',weeklyTarget:35}],dayTypes:[{id:'normal',code:'NORM',name:'Normal',start:'09:00',end:'18:30',pause:30,minutes:540},{id:'normal-jeudi',code:'NORJ',name:'Normal jeudi',start:'09:00',end:'18:30',pause:90,minutes:480},{id:'repos',code:'OFF',name:'Repos',start:'',end:'',pause:0,minutes:0}],weekPlan:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},planningProfiles:[{id:'normal',code:'MJC',name:'Planning principal',role:'principal',days:{1:'normal',2:'normal',3:'normal',4:'normal-jeudi',5:'repos',6:'repos',0:'repos'},versions:[],archived:false}],planningPeriods:[],futureEvents:[],dayOverridesV32:{}},days:{'2026-09-21':{segments:[],note:'',status:'open',source:'live'}},historicalWeeks:[],balanceAdjustments:[]};
   const {core:C,domain:D}=app(oldStarter);
   assert.deepEqual(Array.from(C.state.config.dayTypes,t=>t.code),['OFF'],'l’ancien modèle personnel inutilisé doit être neutralisé après mise à jour');

@@ -94,6 +94,15 @@ option de la liste.
 
 Le planning principal s’applique par défaut. Il n’a pas besoin d’une période d’application. Les plannings secondaires ou exceptionnels remplacent le principal pendant leurs périodes définies. Les plannings peuvent avoir des versions avec date d’effet.
 
+Lorsqu’un changement de planning a été oublié, une version peut être créée
+rétroactivement, indépendamment de la date d’installation de l’application. Si
+des versions plus récentes existent déjà, l’interface doit les montrer et
+demander la portée de la correction : soit seulement jusqu’au prochain
+changement, soit également dans toutes les versions suivantes. Une version à
+la même date remplace la précédente au lieu de créer un doublon. Cette
+correction agit exclusivement sur le prévu ; elle ne modifie jamais le réel
+déjà saisi.
+
 Exemples importants de la configuration MJC :
 
 - `NORM` : 09:00–18:30, pause 30 min, durée attendue 9h00 ;
@@ -325,6 +334,7 @@ Les tests couvrent actuellement :
 - jour prévu à 0 h sans pointage automatiquement validé ;
 - restauration de la journée système `OFF` sans modification du réel déjà saisi ;
 - signalement explicite d’une référence de journée type introuvable ;
+- correction rétroactive d’un planning, limitée ou propagée aux versions suivantes, sans toucher au réel ;
 - détail hebdomadaire dépliable avec accès à la modification des journées ;
 - bascule réel/prévu lors de l’ouverture d’une semaine depuis le calendrier annuel ;
 - absence de faux détail pour une semaine seulement consolidée ;
@@ -346,8 +356,8 @@ Vérifier également la syntaxe des scripts et `git diff --check`.
 
 - dépôt : `lemlaurie-hub/mes-heures` ;
 - base publiée avant cette correction : `main` au commit `d554c6dd02da96b0197cdbb2538733291e0cac28` ;
-- journée système `OFF · Non travaillée`, réparation des anciennes références `repos` et dates françaises des événements préparées localement après cette base ;
-- cache PWA préparé en version 67 ;
+- journée système `OFF · Non travaillée`, réparation des anciennes références `repos`, dates françaises des événements et correction rétroactive des versions de planning préparées après cette base ;
+- cache PWA préparé en version 68 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.
