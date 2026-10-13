@@ -222,6 +222,13 @@ Le point de référence (`balanceReferenceDate` et `balanceReferenceMinutes`) co
 
 Destiné aux exports, imports, sauvegardes et futurs documents administratifs. Une sauvegarde restaurable est différente d’un CSV d’exploitation.
 
+Le relevé PDF de période affiche le jour de la semaine en français sur trois
+lettres (`Lun`, `Mar`, `Mer`...) dans une colonne distincte de la date. Les
+colonnes à contenu court et prévisible (`Jour`, `Date`, `Plan`, `Type`,
+`Pause`, `Travaillé`) doivent rester étroites afin de réserver l’espace aux
+plages horaires, aux événements et surtout aux commentaires. Le CSV reprend
+également le jour abrégé.
+
 ## 9. Événements
 
 Événements prévus : congés, arrêt maladie, récupération, formation, jour férié, réunion et autres événements professionnels utiles.
@@ -335,6 +342,7 @@ Les tests couvrent actuellement :
 - restauration de la journée système `OFF` sans modification du réel déjà saisi ;
 - signalement explicite d’une référence de journée type introuvable ;
 - correction rétroactive d’un planning, limitée ou propagée aux versions suivantes, sans toucher au réel ;
+- jour abrégé et largeurs de colonnes adaptées dans les exports de période ;
 - détail hebdomadaire dépliable avec accès à la modification des journées ;
 - bascule réel/prévu lors de l’ouverture d’une semaine depuis le calendrier annuel ;
 - absence de faux détail pour une semaine seulement consolidée ;
@@ -356,8 +364,8 @@ Vérifier également la syntaxe des scripts et `git diff --check`.
 
 - dépôt : `lemlaurie-hub/mes-heures` ;
 - base publiée avant cette correction : `main` au commit `d554c6dd02da96b0197cdbb2538733291e0cac28` ;
-- journée système `OFF · Non travaillée`, réparation des anciennes références `repos`, dates françaises des événements et correction rétroactive des versions de planning préparées après cette base ;
-- cache PWA préparé en version 68 ;
+- journée système `OFF · Non travaillée`, réparation des anciennes références `repos`, dates françaises des événements, correction rétroactive des versions et colonnes du relevé de période préparées après cette base ;
+- cache PWA préparé en version 69 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.

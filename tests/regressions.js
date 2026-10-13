@@ -178,10 +178,19 @@ assert.match(fs.readFileSync(path.join(ROOT,'ui.js'),'utf8'),/appliquer aussi ce
   loadConsumers(MH);
   assert.match(MH.ui.__dayHistoryItem('2026-09-17'),/pause 90 min/,'Historique Récent doit afficher la pause commune');
   assert.equal(MH.exports.__dayRow('2026-09-17').pause,90,'les exports doivent utiliser la pause commune');
+  assert.equal(MH.exports.__dayRow('2026-09-17').weekday,'Jeu','les exports doivent ajouter le jour français sur trois lettres');
 
   C.state.days['2026-09-17'].pauseExplicit=true;
   assert.equal(D.actualPause('2026-09-17'),30,'une pause explicitement personnalisée reste prioritaire');
   assert.equal(D.actualWorked('2026-09-17'),619,'le calcul doit utiliser la pause personnalisée');
+}
+
+{
+  const exportSource=fs.readFileSync(path.join(ROOT,'v17.js'),'utf8');
+  assert.match(exportSource,/<th>Jour<\/th><th>Date<\/th>/,'le PDF mensuel doit séparer le jour abrégé et la date');
+  assert.match(exportSource,/\.days col:nth-child\(1\)\{width:4%\}/,'la colonne Jour doit rester au strict minimum');
+  assert.match(exportSource,/\.days col:nth-child\(9\)\{width:30%\}/,'la colonne Commentaire doit recevoir la plus grande largeur');
+  assert.match(exportSource,/\['Jour','Date','Semaine'/,'le CSV doit reprendre le jour abrégé');
 }
 
 {
