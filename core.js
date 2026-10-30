@@ -28,6 +28,20 @@ window.MH = window.MH || {};
   function weekNumber(k){const d=new Date(k+'T12:00:00'),first=new Date(firstMonday(d.getFullYear())+'T12:00:00'),dayUtc=Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()),firstUtc=Date.UTC(first.getFullYear(),first.getMonth(),first.getDate());return 1+Math.floor((dayUtc-firstUtc)/(7*DAY))}
   function rangeDates(a,b){const out=[];if(!a||!b||b<a)return out;for(let k=a;k<=b;k=addDays(k,1))out.push(k);return out}
   function monthBounds(offset=0){const d=new Date();d.setMonth(d.getMonth()+Number(offset||0),1);return[localKey(new Date(d.getFullYear(),d.getMonth(),1,12)),localKey(new Date(d.getFullYear(),d.getMonth()+1,0,12))]}
+  /** Retourne des débuts de mois consécutifs, y compris au changement d'année. */
+  function monthStarts(anchor=dateKey(),count=6){const d=new Date(anchor+'T12:00:00');d.setDate(1);return Array.from({length:Math.max(0,Number(count)||0)},(_,i)=>localKey(new Date(d.getFullYear(),d.getMonth()+i,1,12)))}
+  /** Une semaine appartient au mois de son lundi : seuls ces lundis sont listés. */
+  function mondaysInMonth(monthStart){const prefix=String(monthStart).slice(0,7),out=[];let k=weekStart(monthStart);if(k<monthStart)k=addDays(k,7);while(k.startsWith(prefix)){out.push(k);k=addDays(k,7)}return out}
+  /**
+   * Le planning courant montre six mois glissants. Une année choisie
+   * volontairement reste complète pour conserver l'accès à ses semaines.
+   */
+  function planningMonthWindow(viewYear,today=dateKey()){
+    const y=Number(viewYear)||Number(String(today).slice(0,4)),currentYear=Number(String(today).slice(0,4));
+    if(y!==currentYear)return{visible:monthStarts(`${y}-01-01`,12),previous:[]};
+    const currentMonth=String(today).slice(0,7)+'-01',monthIndex=Number(String(today).slice(5,7))-1;
+    return{visible:monthStarts(currentMonth,6),previous:monthStarts(`${y}-01-01`,monthIndex)};
+  }
   function validSegments(day){return Array.isArray(day?.segments)?day.segments.filter(s=>s&&s.start):[]}
   function openSegment(day){const ss=validSegments(day);return ss.length&&!ss.at(-1).end?ss.at(-1):null}
   function pauseFor(day){return Math.max(0,Number(day?.pauseMinutes??0)||0)}
@@ -99,5 +113,5 @@ window.MH = window.MH || {};
   function save(){localStorage.setItem(KEY,JSON.stringify(state))}
   function replaceState(next){state=migrate(next);save();return state}
   function dayObj(k=dateKey()){return state.days[k]||(state.days[k]={segments:[],pauseMinutes:Number(state.config.pause||0),note:'',status:'open',source:'live'})}
-  MH.core={KEY,SYSTEM_OFF_ID,DAY,DEFAULT_SCHEDULE,clone,uid,localKey,dateKey,hhmm,mins,clock,fmtMinutes,fmtPlainMinutes,escapeHtml,escapeAttr,addDays,frenchDate,shortDate,weekStart,weekDays,firstMonday,mondays,weekNumber,rangeDates,monthBounds,validSegments,openSegment,pauseFor,worked,ensureSegments,segmentText,dayObj,save,replaceState,get state(){return state}};
+  MH.core={KEY,SYSTEM_OFF_ID,DAY,DEFAULT_SCHEDULE,clone,uid,localKey,dateKey,hhmm,mins,clock,fmtMinutes,fmtPlainMinutes,escapeHtml,escapeAttr,addDays,frenchDate,shortDate,weekStart,weekDays,firstMonday,mondays,weekNumber,rangeDates,monthBounds,monthStarts,mondaysInMonth,planningMonthWindow,validSegments,openSegment,pauseFor,worked,ensureSegments,segmentText,dayObj,save,replaceState,get state(){return state}};
 })(window.MH);

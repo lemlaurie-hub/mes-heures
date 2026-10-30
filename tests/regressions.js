@@ -83,6 +83,14 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
 }
 
 {
+  const {core:C}=app(baseState()),rolling=C.planningMonthWindow(2026,'2026-10-30');
+  assert.deepEqual(Array.from(rolling.visible),['2026-10-01','2026-11-01','2026-12-01','2027-01-01','2027-02-01','2027-03-01'],'le planning courant doit afficher six mois glissants, même au changement d’année');
+  assert.equal(rolling.previous.length,9,'les mois antérieurs de l’année doivent rester disponibles mais masqués');
+  assert.deepEqual(Array.from(C.mondaysInMonth('2027-01-01')),['2027-01-04','2027-01-11','2027-01-18','2027-01-25'],'janvier ne doit contenir que les semaines dont le lundi tombe en janvier');
+  assert.equal(C.planningMonthWindow(2025,'2026-10-30').visible.length,12,'une année choisie volontairement doit rester consultable en entier');
+}
+
+{
   const state=baseState();
   state.config.dayTypes=state.config.dayTypes.filter(t=>t.id!=='repos');
   state.days['2026-09-18']=completeDay('09:00','12:00',0);
@@ -123,6 +131,7 @@ function completeDay(start,end,pauseMinutes=30){return{segments:[{start,end}],pa
 }
 
 assert.match(fs.readFileSync(path.join(ROOT,'ui.js'),'utf8'),/frenchDate\(e\.start,\{day:'2-digit',month:'2-digit',year:'numeric'\}\)/,'les dates des événements doivent être affichées au format français');
+assert.match(fs.readFileSync(path.join(ROOT,'ui.js'),'utf8'),/forecastYear:new Date\(\)\.getFullYear\(\)/,'une nouvelle ouverture doit repartir de l’année courante');
 
 {
   const state=baseState(),plan=state.config.planningProfiles[0];

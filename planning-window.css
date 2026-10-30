@@ -1,0 +1,21 @@
+.previous-months {
+  margin: 14px 0;
+}
+
+.previous-months > summary {
+  cursor: pointer;
+  color: #334155;
+  font-weight: 750;
+  padding: 12px 14px;
+  border: 1px solid #d8dee6;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.previous-months[open] > summary {
+  margin-bottom: 12px;
+}
+
+.planning-horizon-title {
+  margin-top: 18px;
+}

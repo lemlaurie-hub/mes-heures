@@ -190,6 +190,14 @@ Dans le calendrier annuel, le clic sur une semaine dépend de sa position dans l
 - semaine courante ou future : afficher le planning prévu et ses outils de planification ;
 - semaine historique uniquement consolidée : permettre la ressaisie progressive de ses journées, tout en gardant le total consolidé comme référence jusqu’à validation explicite.
 
+À l’ouverture sur l’année courante, le calendrier commence au mois en cours et
+affiche six mois glissants, y compris lorsqu’ils traversent le 31 décembre. Les
+mois précédents de l’année restent accessibles derrière « Afficher les mois
+précédents ». Si l’utilisatrice choisit volontairement une autre année, ses
+douze mois sont affichés. Cette fenêtre de consultation ne modifie pas le bilan
+annuel sélectionné. Les événements listés sous le calendrier correspondent à
+la période de mois effectivement affichée.
+
 ### Reconstitution progressive des semaines consolidées
 
 Une utilisatrice peut ressaisir progressivement les vraies journées d’une ancienne semaine importée sous forme de total.
@@ -311,6 +319,7 @@ Accès direct depuis l’écran du téléphone, navigation basse, gros boutons, 
 - détail de projection : toutes les semaines sont affichées, y compris celles à `0h00` d’écart, afin que l’utilisatrice puisse vérifier qu’elles ont réellement atteint ou neutralisé leur objectif.
 - solde de départ sans historique hebdomadaire : calcul et projection à partir de la référence, sans déficit annuel fictif.
 - raccord annuel/solde : les semaines passées complètes calculées depuis les journées réelles contribuent désormais au solde actuel, même lorsqu'elles ne proviennent ni d'une consolidation ni d'un remplacement. Une semaine réelle incomplète reste exclue afin de ne pas inventer de dette.
+- calendrier Planning : ouverture directe au mois courant, six mois glissants à travers le changement d’année et mois antérieurs repliés mais toujours accessibles. Une année choisie manuellement reste affichée en entier.
 
 ### Pause et anciennes saisies de S36 — cause identifiée, décision d’attendre
 
@@ -356,16 +365,18 @@ Les tests couvrent actuellement :
 - séparation entre événement hebdomadaire et événements journaliers ;
 - affichage des semaines sans écart dans le détail annuel ;
 - rattachement d’une semaine à son lundi ;
+- fenêtre de six mois du planning, passage décembre → janvier et conservation des années consultées volontairement ;
 - cohérence de l’interface et des exports avec le moteur commun.
 
 Vérifier également la syntaxe des scripts et `git diff --check`.
 
-## 14. État au 10 octobre 2026
+## 14. État au 30 octobre 2026
 
 - dépôt : `lemlaurie-hub/mes-heures` ;
-- base publiée avant cette correction : `main` au commit `d554c6dd02da96b0197cdbb2538733291e0cac28` ;
+- base publiée avant cette correction : `main` au commit `924967961c868c6175519cf934e20eaad6e86ab0` ;
 - journée système `OFF · Non travaillée`, réparation des anciennes références `repos`, dates françaises des événements, correction rétroactive des versions et colonnes du relevé de période préparées après cette base ;
-- cache PWA préparé en version 69 ;
+- calendrier glissant de six mois préparé localement après cette base ;
+- cache PWA préparé en version 70 ;
 - les données réellement présentes sur le téléphone ne sont pas directement accessibles depuis le dépôt ; un export récent reste nécessaire pour diagnostiquer leur contenu exact.
 
 Après chaque publication, mettre à jour cette section si les identifiants de commit ou l’état des anomalies ont changé.

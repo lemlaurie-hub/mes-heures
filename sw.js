@@ -5,8 +5,8 @@
  * conservés dans un cache versionné. Changer CACHE force le remplacement de
  * l'ancienne version après un déploiement.
  */
-const CACHE='mes-heures-v69-export-columns';
-const ASSETS=['./','./index.html','./styles.css','./week-history.css','./core.js','./domain.js','./v17.js','./actual-day.js','./ui.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
+const CACHE='mes-heures-v70-rolling-planning';
+const ASSETS=['./','./index.html','./styles.css','./week-history.css','./planning-window.css','./core.js','./domain.js','./v17.js','./actual-day.js','./ui.js','./reprise.js','./projection-detail.js','./manifest.webmanifest','./icon.svg'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(
